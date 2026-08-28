@@ -1,13 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Users, UserPlus, ShieldCheck } from "lucide-react";
+import { Users, UserPlus, ShieldCheck, RotateCcw } from "lucide-react";
 import { useDashboardStore } from "@/lib/store";
 import { Member, MemberRole } from "@/lib/types";
 import { ROLE_LABELS } from "@/lib/roles";
 import { COURSE_NAMES } from "@/lib/courses";
 import { STUDY_GROUPS } from "@/lib/studyGroups";
 import { GROUP_DRAFT_SEQUENCES } from "@/lib/sequences";
+import { resetMemberPin } from "@/lib/auth";
 
 const ROLE_OPTIONS: MemberRole[] = ["student", "lead", "subjectHead", "admin"];
 
@@ -15,6 +16,7 @@ export default function RosterView() {
   const members = useDashboardStore((s) => s.members);
   const assignments = useDashboardStore((s) => s.assignments);
   const setMemberRole = useDashboardStore((s) => s.setMemberRole);
+  const adminMode = useDashboardStore((s) => s.adminMode);
   // 상단 GroupSwitcher와 같은 값을 공유한다 — 여기서 그룹을 고르면 대시보드 전체가 그 그룹 시야로 바뀐다.
   const groupFilter = useDashboardStore((s) => s.viewingGroupId);
   const setGroupFilter = useDashboardStore((s) => s.setViewingGroupId);
@@ -64,6 +66,17 @@ export default function RosterView() {
 
   const assignmentCount = (memberId: string) =>
     assignments.filter((a) => a.draftMemberId === memberId || a.proofMemberId === memberId).length;
+
+  const handleResetPin = async (memberId: string, memberName: string) => {
+    if (!window.confirm(`${memberName} 님의 PIN을 강제 초기화하시겠습니까?\n초기화 후 해당 조원은 다음 로그인 시 새 PIN을 설정하게 됩니다.`)) return;
+    
+    const ok = await resetMemberPin(memberId);
+    if (ok) {
+      alert(`${memberName} 님의 PIN이 초기화되었습니다.`);
+    } else {
+      alert("PIN 초기화에 실패했습니다. 관리자 권한이나 네트워크 상태를 확인해주세요.");
+    }
+  };
 
   // 과목명이 정확히 일치해야 과목부장 조회(findSubjectHead)가 동작하므로
   // 자유 입력 대신 실제 과목 목록에서 고르게 한다.
@@ -233,17 +246,30 @@ export default function RosterView() {
                 </div>
               </div>
               <div className="mt-2 pl-12">
-                <select
-                  value={m.role}
-                  onChange={(e) => setMemberRole(m.id, e.target.value as MemberRole, m.subjects)}
-                  className="rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600"
-                >
-                  {ROLE_OPTIONS.map((r) => (
-                    <option key={r} value={r}>
-                      {ROLE_LABELS[r]}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center justify-between gap-2">
+                  <select
+                    value={m.role}
+                    onChange={(e) => setMemberRole(m.id, e.target.value as MemberRole, m.subjects)}
+                    className="rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600"
+                  >
+                    {ROLE_OPTIONS.map((r) => (
+                      <option key={r} value={r}>
+                        {ROLE_LABELS[r]}
+                      </option>
+                    ))}
+                  </select>
+                  
+                  {adminMode && (
+                    <button
+                      onClick={() => handleResetPin(m.id, m.name)}
+                      className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-rose-500 transition-colors"
+                      title="비밀번호(PIN) 강제 초기화"
+                    >
+                      <RotateCcw size={12} />
+                      PIN 초기화
+                    </button>
+                  )}
+                </div>
                 {m.role === "subjectHead" && (
                   <div className="mt-1.5">
                     <p className="mb-1 text-[11px] text-slate-400">담당 과목</p>

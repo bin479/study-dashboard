@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Calculator, Download } from "lucide-react";
 import { useDashboardStore } from "@/lib/store";
 import { downloadStudyExcel, downloadRestorationExcel, SettlementRow } from "@/lib/csv";
-import { getExamDateForSubject, scoreRestoration, restorationPenalty } from "@/lib/scoring";
+import { getExamDateForSubject, scoreRestoration, restorationPenalty, scoreAssignment } from "@/lib/scoring";
 import { STUDY_GROUPS } from "@/lib/studyGroups";
 import { getMemberGroupId } from "@/lib/mockData";
 
@@ -36,6 +36,7 @@ export default function SettlementView() {
 
   const [startDate, setStartDate] = useState(defaultStartDate());
   const [endDate, setEndDate] = useState(defaultEndDate());
+  const [viewType, setViewType] = useState<"all" | "study" | "restoration">("all");
 
   const { allRows, displayRows } = useMemo(() => {
     // Filter lectures by date range
@@ -94,14 +95,18 @@ export default function SettlementView() {
     assignments
       .filter((a) => inRange.has(a.lectureId))
       .forEach((a) => {
-        const extraDraft = a.extraBonusesDraft?.reduce((sum, b) => sum + b.amount, 0) || 0;
-        const extraProof = a.extraBonusesProof?.reduce((sum, b) => sum + b.amount, 0) || 0;
-        
-        const totalDraftAdj = a.draftAdjustment + extraDraft;
-        const totalProofAdj = a.proofAdjustment + extraProof;
+        const lecture = lectures.find((l) => l.id === a.lectureId);
+        if (!lecture) return;
+        const breakdown = scoreAssignment(lecture, a);
 
-        if (a.draftMemberId && totalDraftAdj) ensure(a.draftMemberId).draftAdjustment += totalDraftAdj;
-        if (a.proofMemberId && totalProofAdj) ensure(a.proofMemberId).proofAdjustment += totalProofAdj;
+        if (a.draftMemberId) {
+          participatingMembers.add(a.draftMemberId);
+          if (breakdown.draftTotal) ensure(a.draftMemberId).draftAdjustment += breakdown.draftTotal;
+        }
+        if (a.proofMemberId) {
+          participatingMembers.add(a.proofMemberId);
+          if (breakdown.proofTotal) ensure(a.proofMemberId).proofAdjustment += breakdown.proofTotal;
+        }
       });
 
     restorationItems
@@ -137,18 +142,19 @@ export default function SettlementView() {
 
     const allRows = Array.from(acc.entries())
       .map(([memberId, r]) => {
+        let typeTotal = 0;
+        if (viewType === "all") {
+          typeTotal = r.draftAdjustment + r.proofAdjustment + r.collectionBonus + r.restorationMissingPenalty + r.explanationAdjustment;
+        } else if (viewType === "study") {
+          typeTotal = r.draftAdjustment + r.proofAdjustment;
+        } else if (viewType === "restoration") {
+          typeTotal = r.collectionBonus + r.restorationMissingPenalty + r.explanationAdjustment;
+        }
+
         return {
           memberId,
           ...r,
-          total:
-            Math.round(
-              (r.draftAdjustment +
-                r.proofAdjustment +
-                r.collectionBonus +
-                r.restorationMissingPenalty +
-                r.explanationAdjustment) *
-                10
-            ) / 10,
+          total: Math.round(typeTotal * 10) / 10,
         };
       })
       .sort((a, b) => a.studentId.localeCompare(b.studentId));
@@ -164,7 +170,7 @@ export default function SettlementView() {
     });
 
     return { allRows, displayRows };
-  }, [lectures, members, assignments, restorationItems, memberExtraScores, startDate, endDate, viewingGroupId]);
+  }, [lectures, members, assignments, restorationItems, memberExtraScores, startDate, endDate, viewingGroupId, viewType]);
 
   const formatDateString = (dateStr: string) => {
     if (!dateStr) return "";
@@ -254,6 +260,36 @@ export default function SettlementView() {
         )}
       </div>
 
+      {/* 뷰 타입 선택 탭 */}
+      <div className="flex w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm md:w-auto">
+        <button
+          onClick={() => setViewType("all")}
+          className={`flex-1 px-4 py-2 text-sm font-semibold transition-colors ${
+            viewType === "all" ? "bg-slate-100 text-slate-900" : "text-slate-500 hover:bg-slate-50"
+          }`}
+        >
+          통합 보기
+        </button>
+        <div className="w-px bg-slate-200" />
+        <button
+          onClick={() => setViewType("study")}
+          className={`flex-1 px-4 py-2 text-sm font-semibold transition-colors ${
+            viewType === "study" ? "bg-slate-100 text-indigo-700" : "text-slate-500 hover:bg-slate-50"
+          }`}
+        >
+          학습부 가감점
+        </button>
+        <div className="w-px bg-slate-200" />
+        <button
+          onClick={() => setViewType("restoration")}
+          className={`flex-1 px-4 py-2 text-sm font-semibold transition-colors ${
+            viewType === "restoration" ? "bg-slate-100 text-blue-700" : "text-slate-500 hover:bg-slate-50"
+          }`}
+        >
+          복원 가감점
+        </button>
+      </div>
+
       {displayRows.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-slate-200 bg-white py-10 text-center text-sm text-slate-400">
           선택한 기간에 집계할 가감점이 없습니다.
@@ -270,16 +306,24 @@ export default function SettlementView() {
                   </p>
                 </div>
                 <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-slate-500">
-                  <dt>초안 가감점</dt>
-                  <dd className="text-right text-slate-700">{r.draftAdjustment}</dd>
-                  <dt>검안 가감점</dt>
-                  <dd className="text-right text-slate-700">{r.proofAdjustment}</dd>
-                  <dt>복원 수합 가점</dt>
-                  <dd className="text-right text-slate-700">{r.collectionBonus}</dd>
-                  <dt>복원 미흡 감점</dt>
-                  <dd className="text-right text-slate-700">{r.restorationMissingPenalty}</dd>
-                  <dt>복원 해설 가감점</dt>
-                  <dd className="text-right text-slate-700">{r.explanationAdjustment}</dd>
+                  {(viewType === "all" || viewType === "study") && (
+                    <>
+                      <dt>초안 가감점</dt>
+                      <dd className="text-right text-slate-700">{r.draftAdjustment}</dd>
+                      <dt>검안 가감점</dt>
+                      <dd className="text-right text-slate-700">{r.proofAdjustment}</dd>
+                    </>
+                  )}
+                  {(viewType === "all" || viewType === "restoration") && (
+                    <>
+                      <dt>복원 수합 가점</dt>
+                      <dd className="text-right text-slate-700">{r.collectionBonus}</dd>
+                      <dt>복원 미흡 감점</dt>
+                      <dd className="text-right text-slate-700">{r.restorationMissingPenalty}</dd>
+                      <dt>복원 해설 가감점</dt>
+                      <dd className="text-right text-slate-700">{r.explanationAdjustment}</dd>
+                    </>
+                  )}
                 </dl>
               </div>
             ))}
@@ -290,11 +334,19 @@ export default function SettlementView() {
               <thead className="bg-slate-50 text-xs text-slate-500">
                 <tr>
                   <th className="px-4 py-2.5 text-left font-medium">이름</th>
-                  <th className="px-3 py-2.5 text-right font-medium">초안 가감점</th>
-                  <th className="px-3 py-2.5 text-right font-medium">검안 가감점</th>
-                  <th className="px-3 py-2.5 text-right font-medium">복원 수합 가점</th>
-                  <th className="px-3 py-2.5 text-right font-medium">복원 미흡 감점</th>
-                  <th className="px-3 py-2.5 text-right font-medium">복원 해설 가감점</th>
+                  {(viewType === "all" || viewType === "study") && (
+                    <>
+                      <th className="px-3 py-2.5 text-right font-medium">초안 가감점</th>
+                      <th className="px-3 py-2.5 text-right font-medium">검안 가감점</th>
+                    </>
+                  )}
+                  {(viewType === "all" || viewType === "restoration") && (
+                    <>
+                      <th className="px-3 py-2.5 text-right font-medium">복원 수합 가점</th>
+                      <th className="px-3 py-2.5 text-right font-medium">복원 미흡 감점</th>
+                      <th className="px-3 py-2.5 text-right font-medium">복원 해설 가감점</th>
+                    </>
+                  )}
                   <th className="px-4 py-2.5 text-right font-medium">합계</th>
                 </tr>
               </thead>
@@ -302,11 +354,19 @@ export default function SettlementView() {
                 {displayRows.map((r, idx) => (
                   <tr key={r.memberName} className={idx !== displayRows.length - 1 ? "border-b border-slate-100" : ""}>
                     <td className="px-4 py-2.5 font-medium text-slate-900">{r.memberName}</td>
-                    <td className="px-3 py-2.5 text-right text-slate-600">{r.draftAdjustment}</td>
-                    <td className="px-3 py-2.5 text-right text-slate-600">{r.proofAdjustment}</td>
-                    <td className="px-3 py-2.5 text-right text-slate-600">{r.collectionBonus}</td>
-                    <td className="px-3 py-2.5 text-right text-slate-600">{r.restorationMissingPenalty}</td>
-                    <td className="px-3 py-2.5 text-right text-slate-600">{r.explanationAdjustment}</td>
+                    {(viewType === "all" || viewType === "study") && (
+                      <>
+                        <td className="px-3 py-2.5 text-right text-slate-600">{r.draftAdjustment}</td>
+                        <td className="px-3 py-2.5 text-right text-slate-600">{r.proofAdjustment}</td>
+                      </>
+                    )}
+                    {(viewType === "all" || viewType === "restoration") && (
+                      <>
+                        <td className="px-3 py-2.5 text-right text-slate-600">{r.collectionBonus}</td>
+                        <td className="px-3 py-2.5 text-right text-slate-600">{r.restorationMissingPenalty}</td>
+                        <td className="px-3 py-2.5 text-right text-slate-600">{r.explanationAdjustment}</td>
+                      </>
+                    )}
                     <td
                       className={`px-4 py-2.5 text-right font-bold ${r.total < 0 ? "text-rose-600" : "text-indigo-700"}`}
                     >

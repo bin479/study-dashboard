@@ -46,3 +46,17 @@ export async function signOutSupabase(): Promise<void> {
   if (!supabase) return;
   await supabase.auth.signOut();
 }
+
+/** 강제 초기화: 관리자가 특정 멤버의 PIN을 삭제(NULL)하여 새로 설정할 수 있게 한다. */
+export async function resetMemberPin(memberId: string): Promise<boolean> {
+  const supabase = getSupabase();
+  if (!supabase) return true;
+  await ensureSession();
+  // 주의: Supabase에 reset_member_pin RPC 함수가 생성되어 있어야 합니다.
+  const { error } = await supabase.rpc("reset_member_pin", { p_member_id: memberId });
+  if (error) {
+    console.error("Failed to reset PIN:", error);
+    return false;
+  }
+  return true;
+}
