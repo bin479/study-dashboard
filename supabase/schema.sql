@@ -164,7 +164,7 @@ create or replace function claim_member(p_member_id text, p_pin text)
 returns boolean
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   existing text;
@@ -174,6 +174,7 @@ begin
     return false; -- 이미 등록됨 — verify_member_pin을 써야 함
   end if;
   insert into member_claims ("memberId", "pinHash", "claimedByAuthUid")
+  -- pgcrypto가 어느 스키마에 설치되었든 찾을 수 있도록 extensions 추가
   values (p_member_id, crypt(p_pin, gen_salt('bf')), auth.uid())
   on conflict ("memberId") do update
     set "pinHash" = excluded."pinHash", "claimedByAuthUid" = excluded."claimedByAuthUid"
@@ -186,7 +187,7 @@ create or replace function verify_member_pin(p_member_id text, p_pin text)
 returns boolean
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   stored text;
@@ -206,6 +207,17 @@ $$;
 grant execute on function is_member_claimed(text) to anon, authenticated;
 grant execute on function claim_member(text, text) to anon, authenticated;
 grant execute on function verify_member_pin(text, text) to anon, authenticated;
+
+create or replace function reset_member_pin(p_member_id text)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  delete from member_claims where "memberId" = p_member_id;
+$$;
+
+grant execute on function reset_member_pin(text) to anon, authenticated;
 
 -- ── Realtime — 변경사항이 실시간으로 다른 브라우저에 반영되게 ────────────────
 alter publication supabase_realtime add table
