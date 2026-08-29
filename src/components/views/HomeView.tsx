@@ -82,11 +82,10 @@ export default function HomeView() {
   const isLead = currentMemberRole === "lead";
   const isNormalUser = !isSubjectHead && !isLead;
 
-  const [reportModalData, setReportModalData] = useState<{ assignment: any, type: "draft" | "proof", lecture: any } | null>(null);
+  const [reportModalData, setReportModalData] = useState<{ assignment: any, type: "draft" | "proof", lecture: any }   const myTasks = useMemo(() => {
+    if (!currentMemberId) return [];
 
-  const myTasks = useMemo(() => {
-    if (!currentMemberId) return null;
-    let drafts = assignments.filter(a => a.draftMemberId === currentMemberId && (a.draftStatus === "pending" || a.draftStatus === "delayed"));
+    let drafts = assignments.filter(a => a.draftMemberId === currentMemberId && (a.draftStatus === "pending" || a.draftStatus === "shifted"));
     let proofs = assignments.filter(a => a.proofMemberId === currentMemberId && (a.proofStatus === "pending" || a.proofStatus === "delayed"));
     let toEvaluate: Assignment[] = [];
     let toConfirmMerge: Assignment[] = [];
@@ -94,7 +93,6 @@ export default function HomeView() {
     if (isLead) {
       const mem = members.find((m) => m.id === currentMemberId);
       if (mem && mem.groupId) {
-        // 그룹장의 그룹에 속한 과제들 중 검안 평가가 필요한 과제 (초안 평가 O, 검안 평가 X)
         toEvaluate = assignments.filter(a => {
           const lec = lectures.find(l => l.id === a.lectureId);
           if (!lec) return false;
@@ -117,15 +115,23 @@ export default function HomeView() {
           return isMerged && isNotConfirmed;
         });
       }
-      
     }
 
-    return { drafts, proofs, toEvaluate, toConfirmMerge };
+    type TaskItem = { type: 'draft' | 'proof' | 'evaluate' | 'confirm'; assignment: Assignment; date: string };
+    
+    const allTasks: TaskItem[] = [
+      ...drafts.map(a => ({ type: 'draft' as const, assignment: a, date: lectures.find(l => l.id === a.lectureId)?.date || "" })),
+      ...proofs.map(a => ({ type: 'proof' as const, assignment: a, date: lectures.find(l => l.id === a.lectureId)?.date || "" })),
+      ...toEvaluate.map(a => ({ type: 'evaluate' as const, assignment: a, date: lectures.find(l => l.id === a.lectureId)?.date || "" })),
+      ...toConfirmMerge.map(a => ({ type: 'confirm' as const, assignment: a, date: lectures.find(l => l.id === a.lectureId)?.date || "" }))
+    ];
+
+    return allTasks.sort((a, b) => a.date.localeCompare(b.date));
   }, [assignments, currentMemberId, isLead, lectures, members]);
 
   return (
     <div className="space-y-6">
-      {myTasks && (myTasks.drafts.length > 0 || myTasks.proofs.length > 0 || myTasks.toEvaluate.length > 0 || myTasks.toConfirmMerge?.length > 0) && (
+      {myTasks.length > 0 && (
         <div className={`rounded-2xl border border-indigo-200 bg-indigo-50 shadow-sm ${isSubjectHead ? 'p-6 sm:p-8' : 'p-4'}`}>
           <div className="flex items-center gap-2 mb-2">
             <span className={`flex items-center justify-center rounded-full bg-indigo-600 text-white shadow ${isSubjectHead ? 'h-8 w-8' : 'h-6 w-6'}`}>
@@ -134,95 +140,102 @@ export default function HomeView() {
             <p className={`font-bold text-indigo-900 ${isSubjectHead ? 'text-lg' : 'text-sm'}`}>내 할 일 알림</p>
           </div>
           <div className={`flex flex-col gap-2 ${isSubjectHead ? 'pl-10 mt-4' : 'pl-8 mt-2'}`}>
-            {myTasks.drafts.map(a => {
+            {myTasks.map((item, idx) => {
+              const a = item.assignment;
               const lec = lectures.find(l => l.id === a.lectureId);
               
-              if (isSubjectHead) {
+              if (item.type === 'draft') {
+                if (isSubjectHead) {
+                  return (
+                    <div key={`draft-${a.id}-${idx}`} className="group flex items-center justify-between rounded-lg bg-white/60 p-2 border border-transparent">
+                      <p className={`font-medium text-indigo-700 text-sm`}>
+                        <span className="mr-2 inline-block rounded bg-indigo-200 px-2 py-0.5 text-xs">초안</span>
+                        {lec ? `${lec.date} ${lec.subject}` : "강의 정보 없음"}
+                      </p>
+                    </div>
+                  );
+                }
+                if (isLead || isNormalUser) {
+                  return (
+                    <button key={`draft-${a.id}-${idx}`} onClick={() => {
+                      if (a.scorePublished) setReportModalData({ assignment: a, type: "draft", lecture: lec });
+                      else alert("승인(채점 확정)이 완료되지 않아 아직 채점 내역을 볼 수 없습니다.");
+                    }} className="group flex items-center justify-between rounded-lg bg-white/60 p-2 hover:bg-white hover:shadow-sm transition border border-transparent hover:border-indigo-100 w-full text-left">
+                      <p className="font-medium text-indigo-700 text-xs">
+                        <span className="mr-2 inline-block rounded bg-indigo-200 px-2 py-0.5 text-[10px] sm:text-xs">초안</span>
+                        {lec ? `${lec.date} ${lec.subject}` : "강의 정보 없음"}
+                      </p>
+                      <ExternalLink size={14} className="text-indigo-300 group-hover:text-indigo-500" />
+                    </button>
+                  );
+                }
                 return (
-                  <div key={`draft-${a.id}`} className="group flex items-center justify-between rounded-lg bg-white/60 p-2 border border-transparent">
-                    <p className={`font-medium text-indigo-700 text-sm`}>
-                      <span className="mr-2 inline-block rounded bg-indigo-200 px-2 py-0.5 text-xs">초안</span>
-                      {lec ? `${lec.date} ${lec.subject}` : "강의 정보 없음"}
-                    </p>
-                  </div>
-                );
-              }
-
-              if (isLead || isNormalUser) {
-                return (
-                  <button key={`draft-${a.id}`} onClick={() => {
-                    if (a.scorePublished) setReportModalData({ assignment: a, type: "draft", lecture: lec });
-                    else alert("승인(채점 확정)이 완료되지 않아 아직 채점 내역을 볼 수 없습니다.");
-                  }} className="group flex items-center justify-between rounded-lg bg-white/60 p-2 hover:bg-white hover:shadow-sm transition border border-transparent hover:border-indigo-100 w-full text-left">
+                  <Link key={`draft-${a.id}-${idx}`} href={`/scoring?evaluateDraft=${a.id}`} className="group flex items-center justify-between rounded-lg bg-white/60 p-2 hover:bg-white hover:shadow-sm transition border border-transparent hover:border-indigo-100">
                     <p className="font-medium text-indigo-700 text-xs">
                       <span className="mr-2 inline-block rounded bg-indigo-200 px-2 py-0.5 text-[10px] sm:text-xs">초안</span>
                       {lec ? `${lec.date} ${lec.subject}` : "강의 정보 없음"}
                     </p>
                     <ExternalLink size={14} className="text-indigo-300 group-hover:text-indigo-500" />
-                  </button>
+                  </Link>
                 );
               }
 
-              return (
-                <Link key={`draft-${a.id}`} href={`/scoring?evaluateDraft=${a.id}`} className="group flex items-center justify-between rounded-lg bg-white/60 p-2 hover:bg-white hover:shadow-sm transition border border-transparent hover:border-indigo-100">
-                  <p className="font-medium text-indigo-700 text-xs">
-                    <span className="mr-2 inline-block rounded bg-indigo-200 px-2 py-0.5 text-[10px] sm:text-xs">초안</span>
-                    {lec ? `${lec.date} ${lec.subject}` : "강의 정보 없음"}
-                  </p>
-                  <ExternalLink size={14} className="text-indigo-300 group-hover:text-indigo-500" />
-                </Link>
-              );
-            })}
-            {myTasks.proofs.map(a => {
-              const lec = lectures.find(l => l.id === a.lectureId);
-              
-              if (isLead || isNormalUser) {
+              if (item.type === 'proof') {
+                if (isLead || isNormalUser) {
+                  return (
+                    <button key={`proof-${a.id}-${idx}`} onClick={() => {
+                      if (a.scorePublished) setReportModalData({ assignment: a, type: "proof", lecture: lec });
+                      else alert("승인(채점 확정)이 완료되지 않아 아직 채점 내역을 볼 수 없습니다.");
+                    }} className="group flex items-center justify-between rounded-lg bg-white/60 p-2 hover:bg-white hover:shadow-sm transition border border-transparent hover:border-indigo-100 w-full text-left">
+                      <p className="font-medium text-indigo-700 text-xs">
+                        <span className="mr-2 inline-block rounded bg-indigo-200 px-2 py-0.5 text-[10px] sm:text-xs">검안</span>
+                        {lec ? `${lec.date} ${lec.subject}` : "강의 정보 없음"}
+                      </p>
+                      <ExternalLink size={14} className="text-indigo-300 group-hover:text-indigo-500" />
+                    </button>
+                  );
+                }
+                const href = isSubjectHead ? `/scoring?evaluateDraft=${a.id}` : `/scoring?evaluateProof=${a.id}`;
                 return (
-                  <button key={`proof-${a.id}`} onClick={() => {
-                    if (a.scorePublished) setReportModalData({ assignment: a, type: "proof", lecture: lec });
-                    else alert("승인(채점 확정)이 완료되지 않아 아직 채점 내역을 볼 수 없습니다.");
-                  }} className="group flex items-center justify-between rounded-lg bg-white/60 p-2 hover:bg-white hover:shadow-sm transition border border-transparent hover:border-indigo-100 w-full text-left">
-                    <p className="font-medium text-indigo-700 text-xs">
+                  <Link key={`proof-${a.id}-${idx}`} href={href} className="group flex items-center justify-between rounded-lg bg-white/60 p-2 hover:bg-white hover:shadow-sm transition border border-transparent hover:border-indigo-100">
+                    <p className={`font-medium text-indigo-700 ${isSubjectHead ? 'text-sm' : 'text-xs'}`}>
                       <span className="mr-2 inline-block rounded bg-indigo-200 px-2 py-0.5 text-[10px] sm:text-xs">검안</span>
                       {lec ? `${lec.date} ${lec.subject}` : "강의 정보 없음"}
                     </p>
                     <ExternalLink size={14} className="text-indigo-300 group-hover:text-indigo-500" />
-                  </button>
+                  </Link>
                 );
               }
 
-              const href = isSubjectHead ? `/scoring?evaluateDraft=${a.id}` : `/scoring?evaluateProof=${a.id}`;
-              
-              return (
-                <Link key={`proof-${a.id}`} href={href} className="group flex items-center justify-between rounded-lg bg-white/60 p-2 hover:bg-white hover:shadow-sm transition border border-transparent hover:border-indigo-100">
-                  <p className={`font-medium text-indigo-700 ${isSubjectHead ? 'text-sm' : 'text-xs'}`}>
-                    <span className="mr-2 inline-block rounded bg-indigo-200 px-2 py-0.5 text-[10px] sm:text-xs">검안</span>
-                    {lec ? `${lec.date} ${lec.subject}` : "강의 정보 없음"}
-                  </p>
-                  <ExternalLink size={14} className="text-indigo-300 group-hover:text-indigo-500" />
-                </Link>
-              );
-            })}
-            
-            {myTasks.toEvaluate.map(a => {
-              const lec = lectures.find(l => l.id === a.lectureId);
-              return (
-                <Link key={`eval-${a.id}`} href={`/scoring?evaluateProof=${a.id}`} className="group flex items-center justify-between rounded-lg bg-white/60 p-2 hover:bg-white hover:shadow-sm transition border border-transparent hover:border-indigo-100">
-                  <p className={`font-medium text-indigo-700 ${isSubjectHead ? 'text-sm' : 'text-xs'}`}>
-                    <span className="mr-2 inline-block rounded bg-indigo-200 px-2 py-0.5 text-[10px] sm:text-xs">평가 대기</span>
-                    {lec ? `${lec.date} ${lec.subject}` : "강의 정보 없음"}
-                  </p>
-                  <ExternalLink size={14} className="text-indigo-300 group-hover:text-indigo-500" />
-                </Link>
-              );
-            })}
+              if (item.type === 'evaluate') {
+                return (
+                  <Link key={`eval-${a.id}-${idx}`} href={`/scoring?evaluateProof=${a.id}`} className="group flex items-center justify-between rounded-lg bg-white/60 p-2 hover:bg-white hover:shadow-sm transition border border-transparent hover:border-indigo-100">
+                    <p className={`font-medium text-indigo-700 ${isSubjectHead ? 'text-sm' : 'text-xs'}`}>
+                      <span className="mr-2 inline-block rounded bg-indigo-200 px-2 py-0.5 text-[10px] sm:text-xs">평가 대기</span>
+                      {lec ? `${lec.date} ${lec.subject}` : "강의 정보 없음"}
+                    </p>
+                    <ExternalLink size={14} className="text-indigo-300 group-hover:text-indigo-500" />
+                  </Link>
+                );
+              }
 
-            {myTasks.toConfirmMerge?.map(a => {
-              const lec = lectures.find(l => l.id === a.lectureId);
-              return (
-                <Link key={`confirm-${a.id}`} href={`/scoring?evaluateProof=${a.id}`} className="group flex items-center justify-between rounded-lg bg-indigo-100/60 p-2 hover:bg-indigo-100 hover:shadow-sm transition border border-indigo-200 hover:border-indigo-300">
-                  <p className={`font-medium text-indigo-700 ${isSubjectHead ? 'text-sm' : 'text-xs'}`}>
-                    <span className="mr-2 inline-block rounded bg-indigo-500 px-2 py-0.5 text-[10px] sm:text-xs text-white">수동 점수 확정 필요 (병합됨)</span>
+              if (item.type === 'confirm') {
+                return (
+                  <Link key={`confirm-${a.id}-${idx}`} href={`/scoring?evaluateProof=${a.id}`} className="group flex items-center justify-between rounded-lg bg-indigo-100/60 p-2 hover:bg-indigo-100 hover:shadow-sm transition border border-indigo-200 hover:border-indigo-300">
+                    <p className={`font-medium text-indigo-700 ${isSubjectHead ? 'text-sm' : 'text-xs'}`}>
+                      <span className="mr-2 inline-block rounded bg-indigo-500 px-2 py-0.5 text-[10px] sm:text-xs text-white">수동 점수 확정 필요 (병합됨)</span>
+                      {lec ? `${lec.date} ${lec.subject}` : "강의 정보 없음"}
+                    </p>
+                    <ExternalLink size={14} className="text-indigo-400 group-hover:text-indigo-600" />
+                  </Link>
+                );
+              }
+
+              return null;
+            })}
+          </div>
+        </div>
+      )}요 (병합됨)</span>
                     {lec ? `${lec.date} ${lec.subject}` : "강의 정보 없음"}
                   </p>
                   <ExternalLink size={14} className="text-indigo-400 group-hover:text-indigo-600" />
