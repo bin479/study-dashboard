@@ -19,10 +19,14 @@ export default function GroupSwitcher() {
     if (isNormalUser && viewingGroupId !== null) {
       setViewingGroupId(null);
     }
-    // 그룹장(lead)과 과목부장(subjectHead)은 전체보기(null)와 자기 그룹 외에는 접근 불가 (adminMode와 무관)
+    // 그룹장(lead)과 과목부장(subjectHead)은 전체보기(null)와 자기 그룹 외에는 접근 불가
+    // 예외: 성민수 그룹장이 관리자 모드를 켰을 때는 모든 그룹을 볼 수 있음
     if (currentMemberRole === "subjectHead" || currentMemberRole === "lead") {
-      if (viewingGroupId !== null && viewingGroupId !== mem?.groupId) {
-        setViewingGroupId(null); // 다른 그룹을 보고 있으면 전체보기로 이동
+      const isSungminsooAdmin = mem?.name === "성민수" && adminMode;
+      if (!isSungminsooAdmin) {
+        if (viewingGroupId !== null && viewingGroupId !== mem?.groupId) {
+          setViewingGroupId(null); // 다른 그룹을 보고 있으면 전체보기로 이동
+        }
       }
     }
   }, [isNormalUser, viewingGroupId, setViewingGroupId, currentMemberRole, mem?.groupId, adminMode]);
@@ -51,7 +55,10 @@ export default function GroupSwitcher() {
 
       {STUDY_GROUPS.filter(g => {
         if (currentMemberRole === "subjectHead" || currentMemberRole === "lead") {
-          return g.id === mem?.groupId;
+          const isSungminsooAdmin = mem?.name === "성민수" && adminMode;
+          if (!isSungminsooAdmin) {
+            return g.id === mem?.groupId;
+          }
         }
         return true;
       }).map((g) => {
