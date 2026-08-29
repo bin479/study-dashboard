@@ -54,6 +54,16 @@ export default function ScoringView() {
   const ADMIN_ALLOWED_NAMES = ["한상희", "성민수"];
   const canUseAdminMode = adminMode && currentMember && ADMIN_ALLOWED_NAMES.includes(currentMember.name);
 
+  const canManageAssignment = (lectureSubject: string) => {
+    if (adminMode && canUseAdminMode) return true;
+    if (currentMember?.name === "성민수") return true;
+    if (isLead) {
+      const targetGroup = findGroupBySubject(STUDY_GROUPS, lectureSubject);
+      return targetGroup?.id === currentMember?.groupId;
+    }
+    return false;
+  };
+
   const searchParams = useSearchParams();
 
   const [tab, setTab] = useState<"leaderboard" | "detail">(() => {
@@ -563,7 +573,7 @@ export default function ScoringView() {
                           </div>
                         </div>
 
-                        {isLead && (
+                        {canManageAssignment(lecture.subject) && (
                           <>
                             <div className="mt-2 border-t border-slate-200 pt-2 flex flex-col gap-2">
                               <p className="text-[11px] font-medium text-slate-400">기본 점수 확정</p>
@@ -619,7 +629,7 @@ export default function ScoringView() {
                                 검안 · {memberName(members, assignment.proofMemberId)}
                               </p>
                               <div className="flex items-center gap-2">
-                                {isLead && (
+                                {canManageAssignment(lecture.subject) && (
                                   <button
                                     onClick={() => setEvaluatingProofId(assignment.id)}
                                     className="rounded bg-white px-2 py-1 text-[10px] font-semibold text-indigo-600 shadow-sm border border-indigo-100 hover:bg-indigo-50"
@@ -651,7 +661,7 @@ export default function ScoringView() {
                                 그룹장 승인 후 평가가 공개됩니다.
                               </p>
                             )}
-                            {isLead && (
+                            {canManageAssignment(lecture.subject) && (
                               <div className="mt-2 border-t border-slate-200 pt-2 flex items-center justify-between">
                                 <p className="text-[11px] font-medium text-slate-400">검안자에게 채점 내역 공개</p>
                                 <button

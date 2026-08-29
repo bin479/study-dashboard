@@ -504,7 +504,8 @@ export default function ScheduleView() {
                   key={lecture.id}
                   onClick={() => {
                     const isAdminAllowed = adminMode && canUseAdminMode;
-                    if (isAdminAllowed) {
+                    const isSungMinSoo = currentMemberName === "성민수";
+                    if (isAdminAllowed || isSungMinSoo) {
                       setSelectedLecture(lecture);
                       return;
                     }
@@ -516,7 +517,7 @@ export default function ScheduleView() {
                     setSelectedLecture(lecture);
                   }}
                   className={`m-0.5 rounded-lg border p-1.5 transition-all flex flex-col justify-center items-center text-center overflow-hidden
-                    ${((adminMode && canUseAdminMode) || (!isNormalUser && currentMemberRole !== "subjectHead" && (currentMemberRole !== "lead" || findGroupBySubject(STUDY_GROUPS, lecture.subject)?.id === currentMember?.groupId))) ? "cursor-pointer hover:brightness-95" : "cursor-default"}
+                    ${((adminMode && canUseAdminMode) || currentMemberName === "성민수" || (!isNormalUser && currentMemberRole !== "subjectHead" && (currentMemberRole !== "lead" || findGroupBySubject(STUDY_GROUPS, lecture.subject)?.id === currentMember?.groupId))) ? "cursor-pointer hover:brightness-95" : "cursor-default"}
                     ${getLectureColor(lecture, viewingGroupId)}
                     ${isInactive ? "opacity-50" : ""}
                   `}
