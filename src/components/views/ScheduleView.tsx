@@ -23,6 +23,7 @@ import WallpaperModal from "../WallpaperModal";
 import D1NoticeCard from "../D1NoticeCard";
 import { Download, RefreshCw, ExternalLink } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const shortDate = formatShortDate;
 const WEEKDAYS = ["월", "화", "수", "목", "금"];
@@ -58,6 +59,7 @@ function getTimeRow(time: string) {
 }
 
 export default function ScheduleView() {
+  const router = useRouter();
   const lectures = useDashboardStore((s) => s.lectures);
   const simulatedToday = useDashboardStore((s) => s.simulatedToday);
   const assignments = useDashboardStore((s) => s.assignments);
@@ -598,12 +600,19 @@ export default function ScheduleView() {
                             const num = lectureNumberMap.get(lId);
                             const tier = getDefaultTier(lecture.subjectType, lecture.durationHours);
                             return (
-                              <div key={idx} className="flex flex-col items-center">
+                              <div 
+                                key={idx} 
+                                className="flex flex-col items-center mt-1 pt-1 border-t border-black/5 hover:bg-black/5 rounded cursor-pointer transition-colors"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  router.push(`/scoring?subject=${encodeURIComponent(lecture.subject)}`);
+                                }}
+                              >
                                 <div>
                                   {num ? <span className="font-bold text-indigo-700">[{num}번] </span> : ""}초:{d} / 검:{p}
                                 </div>
                                 {viewingGroupId && (
-                                  <div className="text-[8.5px] text-indigo-700 font-bold opacity-90 mt-0.5 tracking-tighter">
+                                  <div className="text-[8.5px] text-indigo-700 font-bold opacity-90 mt-0.5 tracking-tighter pb-0.5">
                                     {a.draftOverrideScore != null
                                       ? `[확정: 초안 +${a.draftOverrideScore} / 검안 +${a.proofOverrideScore ?? tier.proof}]`
                                       : `[예상: 초안 +${tier.draft} / 검안 +${tier.proof}]`}

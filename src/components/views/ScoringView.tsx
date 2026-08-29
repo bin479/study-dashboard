@@ -439,7 +439,7 @@ export default function ScoringView() {
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div>
                         <p className="text-sm font-semibold text-slate-900">
-                          {lecture.period} {lecture.subject}
+                          {lecture.period} {lecture.topic && lecture.topic !== lecture.subject ? lecture.topic : lecture.subject}
                         </p>
                         <p className="text-xs text-slate-500">
                           {lecture.date} · {lecture.professor} · {lecture.durationHours}h
