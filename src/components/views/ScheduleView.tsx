@@ -79,7 +79,17 @@ export default function ScheduleView() {
     setSheetSyncBusy(true);
     try {
       const res = await fetch("/.netlify/functions/sheet-sync-now", { method: "POST" });
-      const data = await res.json();
+      
+      let data;
+      try {
+        data = await res.json();
+      } catch (e) {
+        if (!res.ok) {
+          throw new Error(`로컬 환경에서는 Netlify 함수가 작동하지 않을 수 있습니다 (HTTP ${res.status})`);
+        }
+        throw new Error("서버에서 올바르지 않은 응답이 반환되었습니다.");
+      }
+
       if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
       addActivityLog({
         type: "sync",
@@ -88,7 +98,6 @@ export default function ScheduleView() {
         summary: `강의 ${data.lectures}건 반영 (배정 ${data.assignments}건, 삭제 ${data.removed}건) — 새로고침하면 보입니다.`,
         status: "success",
       });
-      // Optionally reload the page to fetch the new data
       window.location.reload();
     } catch (e) {
       addActivityLog({
@@ -116,7 +125,7 @@ export default function ScheduleView() {
 
   const ADMIN_ALLOWED_NAMES = ["한상희", "성민수", "김정후", "정지혜", "김승현", "심은엽", "이동제"];
   const canUseAdminMode = currentMemberName && ADMIN_ALLOWED_NAMES.includes(currentMemberName);
-  const canUseSync = canUseAdminMode || currentMemberRole === "lead";
+  const canUseSync = true;
 
   const weeks = useMemo(() => {
     const byWeek = new Map<string, Map<string, Lecture[]>>();
@@ -362,13 +371,15 @@ export default function ScheduleView() {
             {adminMode && (
               <>
                 <div className="ml-auto flex items-center gap-2">
-                  <button
-                    onClick={() => useDashboardStore.getState().undo()}
-                    disabled={pastStates.length === 0}
-                    className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-white active:scale-95 transition-all"
-                  >
-                    ↩ 되돌리기
-                  </button>
+                  {currentMemberRole !== "subjectHead" && (
+                    <button
+                      onClick={() => useDashboardStore.getState().undo()}
+                      disabled={pastStates.length === 0}
+                      className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-white active:scale-95 transition-all"
+                    >
+                      ↩ 되돌리기
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       const date = activeWeek?.days[0]?.[0] || new Date().toISOString().split("T")[0];
