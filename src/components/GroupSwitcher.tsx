@@ -19,8 +19,8 @@ export default function GroupSwitcher() {
     if (isNormalUser && viewingGroupId !== null) {
       setViewingGroupId(null);
     }
-    // 그룹장(lead)과 과목부장(subjectHead)은 전체보기(null)와 자기 그룹 외에는 접근 불가 (adminMode 제외)
-    if ((currentMemberRole === "subjectHead" || currentMemberRole === "lead") && !adminMode) {
+    // 그룹장(lead)과 과목부장(subjectHead)은 전체보기(null)와 자기 그룹 외에는 접근 불가 (adminMode와 무관)
+    if (currentMemberRole === "subjectHead" || currentMemberRole === "lead") {
       if (viewingGroupId !== null && viewingGroupId !== mem?.groupId) {
         setViewingGroupId(null); // 다른 그룹을 보고 있으면 전체보기로 이동
       }
@@ -50,7 +50,7 @@ export default function GroupSwitcher() {
       </button>
 
       {STUDY_GROUPS.filter(g => {
-        if ((currentMemberRole === "subjectHead" || currentMemberRole === "lead") && !adminMode) {
+        if (currentMemberRole === "subjectHead" || currentMemberRole === "lead") {
           return g.id === mem?.groupId;
         }
         return true;
