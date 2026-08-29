@@ -73,7 +73,8 @@ export default function ScoringView() {
   useEffect(() => {
     const draftId = searchParams.get("evaluateDraft");
     const proofId = searchParams.get("evaluateProof");
-    const targetId = draftId || proofId;
+    const focusId = searchParams.get("focus");
+    const targetId = draftId || proofId || focusId;
 
     if (targetId) {
       // 해당 과제의 그룹으로 viewingGroupId 자동 변경
@@ -92,11 +93,13 @@ export default function ScoringView() {
       if (draftId) setEvaluatingDraftId(draftId);
       if (proofId) setEvaluatingProofId(proofId);
 
-      // 스크롤 이동
+      // 스크롤 이동 및 강조
       setTimeout(() => {
         const el = document.getElementById(`assignment-${targetId}`);
         if (el) {
           el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.classList.add("ring-2", "ring-indigo-500", "ring-offset-2");
+          setTimeout(() => el.classList.remove("ring-2", "ring-indigo-500", "ring-offset-2"), 2000);
         }
       }, 300);
     }

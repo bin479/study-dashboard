@@ -546,7 +546,7 @@ export default function ScheduleView() {
                                 className="flex flex-col items-center mt-1 pt-1 border-t border-black/5 hover:bg-black/5 rounded cursor-pointer transition-colors"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  router.push(`/scoring?subject=${encodeURIComponent(lecture.subject)}`);
+                                  router.push(`/scoring?subject=${encodeURIComponent(lecture.subject)}&focus=${a.id}`);
                                 }}
                               >
                                 <div>
