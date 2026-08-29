@@ -12,6 +12,13 @@ interface Props {
   onSave: (adjustment: number, reason: string) => void;
 }
 
+const READABILITY_TIERS = [
+  { value: 0, label: "특별한 개선 없이 초안 그대로 다듬기만 함" },
+  { value: 0.5, label: "서식/오탈자 정리 등 가벼운 다듬기" },
+  { value: 1, label: "표·구조 재구성 등 가독성을 크게 개선" },
+  { value: 1.5, label: "시각자료(그림·도식) 추가 등 대폭 개선" },
+] as const;
+
 export default function ProofEvaluationModal({ assignment, lecture, proofMemberName, onClose, onSave }: Props) {
   const baseScore = proofBasePoints(lecture.subjectType, lecture.durationHours, assignment.proofAtDraftLevel);
 
@@ -37,7 +44,8 @@ export default function ProofEvaluationModal({ assignment, lecture, proofMemberN
 
   const generateReport = () => {
     const { bonus, penalty, total } = calculateAdjustment();
-    
+    const readabilityLabel = READABILITY_TIERS.find((t) => t.value === readabilityBonus)?.label ?? "";
+
     let correctionText = "정상 교정 완료";
     if (correctionLevel === "minor_neglect") correctionText = "경미한 방치 (-0.5점)";
     if (correctionLevel === "major_neglect") correctionText = "심각한 방치 (-1.0점)";
@@ -46,9 +54,9 @@ export default function ProofEvaluationModal({ assignment, lecture, proofMemberN
     if (daysLate > 0) deductions.push(`검안 ${daysLate}일 지연(-${daysLate * 0.5})`);
     if (correctionLevel === "minor_neglect") deductions.push(`경미한 방치(-0.5)`);
     if (correctionLevel === "major_neglect") deductions.push(`심각한 방치(-1.0)`);
-    if (readabilityBonus > 0) deductions.push(`표 정리 가독성 개선(+${readabilityBonus})`);
+    if (readabilityBonus > 0) deductions.push(`가독성/서식 개선 - ${readabilityLabel}(+${readabilityBonus})`);
     if (rewritten) deductions.push(`전면 재작성(+8.0)`);
-    
+
     const finalScore = baseScore + total;
 
     return `[학습부 검안 평가 보고]
@@ -58,7 +66,7 @@ export default function ProofEvaluationModal({ assignment, lecture, proofMemberN
 [평가 체크리스트]
 제출 기한 (48시간 이내): ${daysLate === 0 ? "O (정상)" : `X (${daysLate}일 지연, -${(daysLate * 0.5).toFixed(1)}점)`}
 초안 오류·누락 교정 여부: ${correctionText}
-가독성/서식 개선 (가산점): ${readabilityBonus > 0 ? `특별한 개선 여부 (+${readabilityBonus}점)` : "해당 없음"}
+가독성/서식 개선 (가산점): ${readabilityBonus > 0 ? `${readabilityLabel} (+${readabilityBonus}점)` : "해당 없음"}
 초안 대체 재작성 여부: ${rewritten ? "전면 재작성 (+8.0점 추가)" : "해당 없음"}
 
 [최종 산정]
@@ -82,16 +90,24 @@ export default function ProofEvaluationModal({ assignment, lecture, proofMemberN
           <div className="space-y-3">
             <h3 className="font-semibold text-slate-700">1. 가산점 항목</h3>
             <div>
-              <label className="text-xs font-medium text-slate-500">가독성/서식 개선 (점수 직접 입력 0 ~ 1.5)</label>
-              <input
-                type="number"
-                step="0.5"
-                min="0"
-                max="1.5"
-                value={readabilityBonus}
-                onChange={(e) => setReadabilityBonus(Number(e.target.value))}
-                className="mt-1 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-              />
+              <label className="text-xs font-medium text-slate-500">가독성/서식 개선</label>
+              <div className="mt-1 space-y-1.5">
+                {READABILITY_TIERS.map((tier) => (
+                  <button
+                    key={tier.value}
+                    type="button"
+                    onClick={() => setReadabilityBonus(tier.value)}
+                    className={`w-full rounded-xl border p-2.5 text-left text-sm transition ${
+                      readabilityBonus === tier.value
+                        ? "border-indigo-600 bg-indigo-50/50 ring-1 ring-indigo-600"
+                        : "border-slate-200 hover:border-indigo-200"
+                    }`}
+                  >
+                    <span className="font-semibold text-indigo-600">{tier.value > 0 ? `+${tier.value}점` : "0점"}</span>
+                    <span className="ml-2 text-slate-600">{tier.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
             <div>
               <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
