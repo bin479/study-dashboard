@@ -242,3 +242,8 @@ grant execute on function reset_member_pin(text) to anon, authenticated;
 -- ── Realtime — 변경사항이 실시간으로 다른 브라우저에 반영되게 ────────────────
 alter publication supabase_realtime add table
   members, lectures, assignments, restoration_items, exam_checklist, app_settings;
+A L T E R   T A B L E   a s s i g n m e n t s   A D D   C O L U M N   \  
+ d r a f t O v e r r i d e S c o r e \   r e a l ;   A L T E R   T A B L E   a s s i g n m e n t s   A D D   C O L U M N   \ p r o o f O v e r r i d e S c o r e \   r e a l ;  
+ A L T E R   T A B L E   a s s i g n m e n t s   A D D   C O L U M N   \  
+ d r a f t S c o r e P u b l i s h e d \   b o o l e a n   D E F A U L T   f a l s e ;   A L T E R   T A B L E   a s s i g n m e n t s   A D D   C O L U M N   \ p r o o f S c o r e P u b l i s h e d \   b o o l e a n   D E F A U L T   f a l s e ;  
+ 
