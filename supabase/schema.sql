@@ -66,7 +66,11 @@ create table if not exists assignments (
   "draftAdjustmentReason" text not null default '',
   "proofAdjustment" numeric not null default 0,
   "proofAdjustmentReason" text not null default '',
-  "proofAtDraftLevel" boolean not null default false
+  "proofAtDraftLevel" boolean not null default false,
+  "extraBonusesDraft" jsonb,
+  "extraBonusesProof" jsonb,
+  "draftOverrideScore" numeric,
+  "scorePublished" boolean not null default false
 );
 
 -- ── restoration_items ──────────────────────────────────────────────────────
