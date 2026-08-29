@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, X } from "lucide-react";
+import { CheckCircle2, X, HelpCircle, ChevronUp, ChevronDown } from "lucide-react";
 import { Assignment, Lecture } from "@/lib/types";
 import { getDefaultTier, getAvailableTiers } from "@/lib/scoring";
 
@@ -22,6 +22,7 @@ export default function MergeScoreConfirmModal({ assignment, lecture, draftMembe
   const [selectedDraftScore, setSelectedDraftScore] = useState<number>(defaultTier.draft);
   const [selectedProofScore, setSelectedProofScore] = useState<number>(defaultTier.proof);
   const [reason, setReason] = useState<string>(defaultTier.reason);
+  const [showHelp, setShowHelp] = useState(false);
 
   const handleOption = (draft: number, proof: number, text: string) => {
     setSelectedDraftScore(draft);
@@ -60,6 +61,29 @@ export default function MergeScoreConfirmModal({ assignment, lecture, draftMembe
               — 아래의 상세 체크리스트에서 상황에 맞는 항목을 선택해 점수를 확정해주세요.
             </div>
           )}
+
+          <div className="rounded-xl bg-slate-50 border border-slate-100 overflow-hidden">
+            <button
+              onClick={() => setShowHelp(!showHelp)}
+              className="flex w-full items-center justify-between px-4 py-3 text-xs font-bold text-slate-700 hover:bg-slate-100/50 transition-colors"
+            >
+              <div className="flex items-center gap-1.5">
+                <HelpCircle size={14} className="text-indigo-600" />
+                <span>어떤 상황일 때 선택하나요? (기준 안내)</span>
+              </div>
+              {showHelp ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </button>
+            {showHelp && (
+              <div className="px-4 pb-4 pt-1 text-xs text-slate-600 space-y-3 border-t border-slate-100">
+                {availableTiers.map((t) => (
+                  <div key={t.id}>
+                    <p className="font-semibold text-indigo-700 mb-0.5">{t.reason}</p>
+                    <p className="leading-relaxed opacity-90">{t.description}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="space-y-2">
             <p className="text-xs font-semibold text-slate-700 mb-2">스코어링 상세 옵션 선택</p>

@@ -55,25 +55,25 @@ export function proofBasePoints(
  * 체크리스트 기반 점수 산정 룰 (2시간 메이저 조기 종료)
  */
 export const CHECKLIST_TIERS_2HR_MAJOR = [
-  { id: "2hr_major_normal", draft: 8, proof: 5, reason: "밀도 정상(8점)" },
-  { id: "2hr_major_new_short", draft: 6, proof: 3, reason: "신규 작성 & 적은 양(6점)" },
-  { id: "2hr_major_simple", draft: 4, proof: 2.5, reason: "단순 수정(4점)" },
-  { id: "2hr_major_past", draft: 2, proof: 1, reason: "기출 추가(2점)" },
+  { id: "2hr_major_normal", draft: 8, proof: 5, reason: "밀도 정상(8점)", description: "일반적인 2시간 분량의 메이저 수업. 밀도가 정상적이거나 수업 시간이 꽉 차게 진행된 경우 선택합니다." },
+  { id: "2hr_major_new_short", draft: 6, proof: 3, reason: "신규 작성 & 적은 양(6점)", description: "전년도 기출이나 기존 자료가 없어서 처음부터 새로 작성해야 했지만, 절대적인 수업 분량이나 시간이 적었던 경우 선택합니다." },
+  { id: "2hr_major_simple", draft: 4, proof: 2.5, reason: "단순 수정(4점)", description: "전년도 자료와 거의 유사하여 단순 수정 위주로 작업이 이루어진 경우 선택합니다." },
+  { id: "2hr_major_past", draft: 2, proof: 1, reason: "기출 추가(2점)", description: "수업 내용의 변동 없이 단순히 기출문제만 몇 개 추가하는 정도로 작업이 마무리된 경우 선택합니다." },
 ] as const;
 
 /** 
  * 체크리스트 기반 점수 산정 룰 (1시간 수업)
  */
 export const CHECKLIST_TIERS_1HR = [
-  { id: "1hr_normal", draft: 4, proof: 2.5, reason: "일반/단순 분량" },
-  { id: "1hr_high_density", draft: 6, proof: 3, reason: "풀타임 고밀도" },
+  { id: "1hr_normal", draft: 4, proof: 2.5, reason: "일반/단순 분량", description: "일반적인 1시간 수업이거나 내용이 단순하여 작업량이 많지 않았던 경우 선택합니다." },
+  { id: "1hr_high_density", draft: 6, proof: 3, reason: "풀타임 고밀도", description: "1시간 수업이지만 휴식 없이 풀타임으로 꽉 채워 진행되었고, 밀도가 매우 높아 작업량이 2시간 수업과 맞먹는 경우 선택합니다." },
 ] as const;
 
 /**
  * 체크리스트 기반 점수 산정 룰 (2시간 마이너 수업)
  */
 export const CHECKLIST_TIERS_2HR_MINOR = [
-  { id: "2hr_minor_normal", draft: 4, proof: 2.5, reason: "마이너 기본" },
+  { id: "2hr_minor_normal", draft: 4, proof: 2.5, reason: "마이너 기본", description: "PBL, 세미나 등 일반적인 마이너 과목의 기본 배점입니다." },
 ] as const;
 
 /**
