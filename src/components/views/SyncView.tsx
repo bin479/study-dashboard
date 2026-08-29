@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { RefreshCw, Download, Upload, ArrowDownToLine, ArrowUpFromLine, Info, RotateCcw } from "lucide-react";
+import { RefreshCw, Download, Upload, ArrowDownToLine, ArrowUpFromLine, Info, RotateCcw, Zap } from "lucide-react";
 import { useDashboardStore } from "@/lib/store";
 import { downloadCSV, lecturesToCSV, membersToCSV, assignmentsToCSV } from "@/lib/csv";
 
@@ -88,6 +88,30 @@ export default function SyncView() {
   const resetToMockData = useDashboardStore((s) => s.resetToMockData);
 
   const [busy, setBusy] = useState<string | null>(null);
+  const [sheetSyncBusy, setSheetSyncBusy] = useState(false);
+
+  const handleSheetSyncNow = async () => {
+    setSheetSyncBusy(true);
+    try {
+      const res = await fetch("/.netlify/functions/sheet-sync-now", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      addSyncLog({
+        direction: "pull",
+        source: "학습부배정표.xlsx",
+        summary: `강의 ${data.lectures}건 반영 (배정 ${data.assignments}건, 삭제 ${data.removed}건) — 새로고침하면 보입니다.`,
+        status: "success",
+      });
+    } catch (e) {
+      addSyncLog({
+        direction: "pull",
+        source: "학습부배정표.xlsx",
+        summary: `동기화 실패: ${(e as Error).message}`,
+        status: "error",
+      });
+    }
+    setSheetSyncBusy(false);
+  };
 
   const readFile = (file: File, onText: (text: string) => void) => {
     const reader = new FileReader();
@@ -119,6 +143,20 @@ export default function SyncView() {
           쓰기(push)는 Google Sheets API OAuth 연결이 필요하므로, 이 데모에서는 CSV 내보내기로 대체되어 있습니다 — Apps
           Script 웹훅을 연결하면 완전한 2-way sync로 확장할 수 있습니다.
         </p>
+      </div>
+
+      <div className="rounded-2xl border border-indigo-200 bg-indigo-50/40 p-4 shadow-sm">
+        <p className="text-sm font-semibold text-slate-800">학습부배정표 (구글 시트) 동기화</p>
+        <p className="mt-0.5 text-xs text-slate-500">
+          5분마다 자동으로 동기화되지만, 방금 시트를 고쳤다면 여기서 바로 반영할 수 있습니다.
+        </p>
+        <button
+          onClick={handleSheetSyncNow}
+          disabled={sheetSyncBusy}
+          className="mt-3 flex items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white active:scale-95 disabled:opacity-50"
+        >
+          <Zap size={15} /> {sheetSyncBusy ? "동기화 중…" : "지금 동기화"}
+        </button>
       </div>
 
       <SyncBlock

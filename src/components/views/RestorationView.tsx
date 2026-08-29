@@ -24,6 +24,10 @@ export default function RestorationView() {
   const saveRestorationState = useDashboardStore((s) => s.saveRestorationState);
   const loadRestorationState = useDashboardStore((s) => s.loadRestorationState);
   const deleteRestorationState = useDashboardStore((s) => s.deleteRestorationState);
+  const memberExtraScores = useDashboardStore((s) => s.memberExtraScores);
+  const removeMemberExtraScore = useDashboardStore((s) => s.removeMemberExtraScore);
+  const updateMemberExtraScore = useDashboardStore((s) => s.updateMemberExtraScore);
+  const removeMemberExtraScoresBySubject = useDashboardStore((s) => s.removeMemberExtraScoresBySubject);
 
   const [isChecklistOpen, setIsChecklistOpen] = useState(false);
   const [isLoadStateModalOpen, setIsLoadStateModalOpen] = useState(false);
@@ -668,8 +672,22 @@ export default function RestorationView() {
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm mb-4">
-        <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-1.5">
-          <FileText size={16} className="text-indigo-600" /> 방금 저장된 {form.subject} 감점 기록 (정산 반영 완료)
+        <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <FileText size={16} className="text-indigo-600" /> 방금 저장된 {form.subject} 감점 기록 (정산 반영 완료)
+          </div>
+          {memberExtraScores.filter(s => s.reason.includes(`[${form.subject}]`)).length > 0 && (
+            <button
+              onClick={() => {
+                if (confirm(`정말 ${form.subject} 과목의 모든 감점 기록을 한 번에 삭제하시겠습니까?`)) {
+                  removeMemberExtraScoresBySubject(form.subject);
+                }
+              }}
+              className="text-xs font-semibold text-rose-600 hover:text-rose-800 bg-rose-50 px-2 py-1 rounded"
+            >
+              전체 삭제
+            </button>
+          )}
         </h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
@@ -678,11 +696,12 @@ export default function RestorationView() {
                 <th className="px-3 py-2 rounded-tl-lg">이름</th>
                 <th className="px-3 py-2">감점 점수</th>
                 <th className="px-3 py-2">감점 사유</th>
-                <th className="px-3 py-2 rounded-tr-lg">기록일</th>
+                <th className="px-3 py-2">기록일</th>
+                <th className="px-3 py-2 rounded-tr-lg text-right">관리</th>
               </tr>
             </thead>
             <tbody>
-              {useDashboardStore.getState().memberExtraScores
+              {memberExtraScores
                 .filter(s => s.reason.includes(`[${form.subject}]`))
                 .sort((a, b) => b.id.localeCompare(a.id))
                 .slice(0, 10)
@@ -694,10 +713,36 @@ export default function RestorationView() {
                       <td className="px-3 py-2 text-rose-600 font-bold">{score.amount}</td>
                       <td className="px-3 py-2 text-slate-600 text-xs">{score.reason}</td>
                       <td className="px-3 py-2 text-slate-400 text-xs">{score.date}</td>
+                      <td className="px-3 py-2 text-right">
+                        <button
+                          onClick={() => {
+                            const newAmountStr = prompt("새로운 감점 점수를 입력하세요 (음수로 입력, 예: -5)", String(score.amount));
+                            if (newAmountStr === null) return;
+                            const newAmount = Number(newAmountStr);
+                            if (isNaN(newAmount)) return alert("숫자만 입력 가능합니다.");
+                            const newReason = prompt("새로운 감점 사유를 입력하세요", score.reason);
+                            if (newReason === null) return;
+                            updateMemberExtraScore(score.id, newAmount, newReason);
+                          }}
+                          className="text-xs font-medium text-indigo-600 hover:text-indigo-800 mr-3"
+                        >
+                          수정
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm("정말 이 감점 기록을 삭제하시겠습니까?")) {
+                              removeMemberExtraScore(score.id);
+                            }
+                          }}
+                          className="text-xs font-medium text-rose-600 hover:text-rose-800"
+                        >
+                          삭제
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
-              {useDashboardStore.getState().memberExtraScores.filter(s => s.reason.includes(`[${form.subject}]`)).length === 0 && (
+              {memberExtraScores.filter(s => s.reason.includes(`[${form.subject}]`)).length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-3 py-6 text-center text-slate-400 text-xs border-b-0">
                     현재 선택된 과목에 저장된 감점 기록이 없습니다.
@@ -875,11 +920,54 @@ export default function RestorationView() {
                                   <div key={item.id} className="rounded-xl border border-slate-100 bg-white p-3 shadow-sm hover:shadow-md transition relative flex flex-col justify-between">
                                     <div>
                                       <div className="flex justify-between items-start mb-2">
-                                        <span className="font-bold text-slate-700 text-sm">
-                                          {item.questionRangeStart === (item.questionRangeEnd ?? item.questionRangeStart) 
-                                            ? `${item.questionRangeStart}번` 
-                                            : `${item.questionRangeStart}번 ~ ${item.questionRangeEnd}번`}
-                                        </span>
+                                        <div className="flex flex-col">
+                                          <span className="font-bold text-slate-700 text-sm">
+                                            {item.questionRangeStart === (item.questionRangeEnd ?? item.questionRangeStart) 
+                                              ? `${item.questionRangeStart}번` 
+                                              : `${item.questionRangeStart}번 ~ ${item.questionRangeEnd}번`}
+                                          </span>
+                                          <div className="flex gap-2 mt-1">
+                                            <button
+                                              onClick={() => {
+                                                const newName = prompt("새로운 해설 담당자 이름을 입력하세요 (비우면 미지정)", explainerName === "미지정" ? "" : explainerName);
+                                                if (newName === null) return;
+                                                let newIds: string[] = [];
+                                                if (newName.trim()) {
+                                                  const m = members.find(m => m.name === newName.trim());
+                                                  if (m) newIds = [m.id];
+                                                  else return alert("해당 이름의 조원을 찾을 수 없습니다.");
+                                                }
+                                                
+                                                const range = prompt("새로운 문항 범위를 입력하세요 (예: 1-20)", `${item.questionRangeStart}-${item.questionRangeEnd ?? item.questionRangeStart}`);
+                                                if (range === null) return;
+                                                const [startStr, endStr] = range.split("-");
+                                                const start = Number(startStr);
+                                                const end = endStr ? Number(endStr) : start;
+                                                if (isNaN(start) || isNaN(end)) return alert("올바른 범위 형식이 아닙니다.");
+                                                
+                                                updateRestorationItem(item.id, {
+                                                  explainerMemberIds: newIds,
+                                                  questionRangeStart: start,
+                                                  questionRangeEnd: end,
+                                                  totalQuestions: end - start + 1
+                                                });
+                                              }}
+                                              className="text-[10px] text-indigo-500 hover:underline"
+                                            >
+                                              수정
+                                            </button>
+                                            <button
+                                              onClick={() => {
+                                                if (confirm("이 배정을 삭제하시겠습니까?")) {
+                                                  removeRestorationItem(item.id);
+                                                }
+                                              }}
+                                              className="text-[10px] text-rose-500 hover:underline"
+                                            >
+                                              삭제
+                                            </button>
+                                          </div>
+                                        </div>
                                         <span className={`text-xs font-bold ${breakdown.total < 0 ? "text-rose-600" : "text-indigo-600"}`}>
                                           총점: {breakdown.explanationBonus + breakdown.rewritePenalty > 0 ? "+" : ""}{breakdown.explanationBonus + breakdown.rewritePenalty} pt
                                         </span>

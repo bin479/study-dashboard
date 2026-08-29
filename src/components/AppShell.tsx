@@ -14,7 +14,7 @@ import {
   Calculator,
   MoreHorizontal,
 } from "lucide-react";
-import { ReactNode, useMemo } from "react";
+import { ReactNode, useMemo, useEffect } from "react";
 import { useDashboardStore } from "@/lib/store";
 
 const DESKTOP_NAV_ITEMS = [
@@ -60,7 +60,17 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const currentMemberRole = currentMember?.role;
   const currentMemberName = currentMember?.name;
   
-  const canUseAdminMode = currentMemberName === "한상희" || currentMemberName === "성민수";
+  const ADMIN_ALLOWED_NAMES = ["한상희", "성민수", "김정후", "정지혜", "김승현", "심은엽", "이동제"];
+  const canUseAdminMode = currentMemberName && ADMIN_ALLOWED_NAMES.includes(currentMemberName);
+
+  // 로컬 스토리지에 캐시된 이전 멤버(김성후 등) 강제 삭제
+  useEffect(() => {
+    if (members.some(m => m.name === "김성후")) {
+      useDashboardStore.setState(s => ({
+        members: s.members.filter(m => m.name !== "김성후")
+      }));
+    }
+  }, [members]);
 
   const desktopNav = useMemo(() => {
     if (adminMode && canUseAdminMode) return DESKTOP_NAV_ITEMS;

@@ -8,7 +8,7 @@ import { ROLE_LABELS } from "@/lib/roles";
 import { COURSE_NAMES } from "@/lib/courses";
 import { STUDY_GROUPS } from "@/lib/studyGroups";
 import { GROUP_DRAFT_SEQUENCES } from "@/lib/sequences";
-import { resetMemberPin } from "@/lib/auth";
+import { resetMemberPin, claimMember } from "@/lib/auth";
 
 const ROLE_OPTIONS: MemberRole[] = ["student", "lead", "subjectHead", "admin"];
 
@@ -24,6 +24,7 @@ export default function RosterView() {
   const [filter, setFilter] = useState("");
   const [unassignedOnly, setUnassignedOnly] = useState(false);
   const [roleFilter, setRoleFilter] = useState<"all" | "subjectHead" | "student">("all");
+  const [isResettingAll, setIsResettingAll] = useState(false);
 
   const groupById = useMemo(() => new Map(STUDY_GROUPS.map((g) => [g.id, g])), []);
 
@@ -68,14 +69,32 @@ export default function RosterView() {
     assignments.filter((a) => a.draftMemberId === memberId || a.proofMemberId === memberId).length;
 
   const handleResetPin = async (memberId: string, memberName: string) => {
-    if (!window.confirm(`${memberName} 님의 PIN을 강제 초기화하시겠습니까?\n초기화 후 해당 조원은 다음 로그인 시 새 PIN을 설정하게 됩니다.`)) return;
+    if (!window.confirm(`${memberName} 님의 PIN을 0000으로 강제 초기화하시겠습니까?\n초기화 후 해당 조원은 0000으로 로그인할 수 있습니다.`)) return;
     
     const ok = await resetMemberPin(memberId);
     if (ok) {
-      alert(`${memberName} 님의 PIN이 초기화되었습니다.`);
+      await claimMember(memberId, "0000");
+      alert(`${memberName} 님의 PIN이 0000으로 초기화되었습니다.`);
     } else {
       alert("PIN 초기화에 실패했습니다. 관리자 권한이나 네트워크 상태를 확인해주세요.");
     }
+  };
+
+  const handleResetAllPins = async () => {
+    if (!window.confirm("정말로 '모든 사용자'의 PIN을 0000으로 초기화하시겠습니까?\n이 작업은 되돌릴 수 없으며 시간이 다소 소요될 수 있습니다.")) return;
+    if (!window.confirm("마지막 경고입니다.\n명단에 있는 모든 사용자의 비밀번호가 0000으로 바뀝니다.\n계속하시겠습니까?")) return;
+    
+    setIsResettingAll(true);
+    let successCount = 0;
+    for (const member of members) {
+      const ok = await resetMemberPin(member.id);
+      if (ok) {
+        await claimMember(member.id, "0000");
+        successCount++;
+      }
+    }
+    setIsResettingAll(false);
+    alert(`초기화 완료: 총 ${members.length}명 중 ${successCount}명의 비밀번호가 0000으로 변경되었습니다.`);
   };
 
   // 과목명이 정확히 일치해야 과목부장 조회(findSubjectHead)가 동작하므로
@@ -90,12 +109,24 @@ export default function RosterView() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <Users size={22} className="text-indigo-600" />
-        <div>
-          <h1 className="text-lg font-semibold text-slate-900">학습부 멤버 명단</h1>
-          <p className="text-sm text-slate-500">{members.length}명 · 5개 그룹으로 편성되어 있습니다.</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <Users size={22} className="text-indigo-600" />
+          <div>
+            <h1 className="text-lg font-semibold text-slate-900">학습부 멤버 명단</h1>
+            <p className="text-sm text-slate-500">{members.length}명 · 5개 그룹으로 편성되어 있습니다.</p>
+          </div>
         </div>
+        {adminMode && (
+          <button
+            onClick={handleResetAllPins}
+            disabled={isResettingAll}
+            className="flex w-fit items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 disabled:opacity-50 transition"
+          >
+            <RotateCcw size={14} className={isResettingAll ? "animate-spin" : ""} /> 
+            {isResettingAll ? "전체 초기화 진행중..." : "모든 조원 PIN 0000으로 강제 초기화"}
+          </button>
+        )}
       </div>
 
       <input

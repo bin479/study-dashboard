@@ -185,6 +185,9 @@ interface DashboardState {
   toggleScorePublished: (assignmentId: string) => void;
   addExtraBonus: (assignmentId: string, type: "draft" | "proof", amount: number, reason: string) => void;
   addMemberExtraScores: (scores: Omit<MemberExtraScore, "id">[]) => void;
+  removeMemberExtraScore: (id: string) => void;
+  updateMemberExtraScore: (id: string, amount: number, reason: string) => void;
+  removeMemberExtraScoresBySubject: (subject: string) => void;
   removeExtraBonus: (assignmentId: string, type: "draft" | "proof", bonusId: string) => void;
   autoAssignAll: (options?: { onlyUnassigned?: boolean }) => void;
 
@@ -615,6 +618,26 @@ export const useDashboardStore = create<DashboardState>()(
         }));
         // Note: In a real environment, we should sync this to a new Supabase table.
         // For this frontend-only scope, Zustand persist will handle local storage.
+      },
+
+      removeMemberExtraScore: (id) => {
+        set((state) => ({
+          memberExtraScores: state.memberExtraScores.filter((s) => s.id !== id),
+        }));
+      },
+
+      updateMemberExtraScore: (id, amount, reason) => {
+        set((state) => ({
+          memberExtraScores: state.memberExtraScores.map((s) =>
+            s.id === id ? { ...s, amount, reason } : s
+          ),
+        }));
+      },
+
+      removeMemberExtraScoresBySubject: (subject) => {
+        set((state) => ({
+          memberExtraScores: state.memberExtraScores.filter((s) => !s.reason.includes(`[${subject}]`)),
+        }));
       },
 
       addExtraBonus: (assignmentId, type, amount, reason) => {

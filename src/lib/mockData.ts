@@ -45,10 +45,22 @@ export function generateMockMembers(): Member[] {
     });
   });
 
+  const CLASS_REPS = ["김정후", "정지혜", "김승현", "심은엽", "이동제"];
+  const ALL_SUBJECTS = STUDY_GROUPS.flatMap((g) => g.subjects);
+
   return REAL_ROSTER.map((m, i) => {
     const leaderOf = leaderByName.get(m.name);
     if (leaderOf) {
       return { id: `mem_${i}`, ...m, role: "lead" as const, groupId: leaderOf };
+    }
+    const isClassRep = CLASS_REPS.includes(m.name);
+    if (isClassRep) {
+      return {
+        id: `mem_${i}`,
+        ...m,
+        role: "subjectHead" as const,
+        subjects: ALL_SUBJECTS,
+      };
     }
     const subjectHeadGroup = subjectHeadGroupByName.get(m.name);
     if (subjectHeadGroup) {

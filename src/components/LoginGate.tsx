@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Stethoscope, ArrowLeft, Lock } from "lucide-react";
 import { useDashboardStore } from "@/lib/store";
 import { claimMember, isMemberClaimed, verifyMemberPin } from "@/lib/auth";
@@ -19,6 +19,14 @@ export default function LoginGate() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
+  useEffect(() => {
+    const savedId = localStorage.getItem("lastLoginMemberId");
+    if (savedId && members.some(m => m.id === savedId)) {
+      setSelectedId(savedId);
+      setStep("enterPin");
+    }
+  }, [members]);
+
   const visible = members.filter(
     (m) => m.name.includes(query) || (m.studentId?.includes(query) ?? false)
   );
@@ -30,10 +38,7 @@ export default function LoginGate() {
     setError("");
     setPin("");
     setPinConfirm("");
-    setBusy(true);
-    const claimed = await isMemberClaimed(memberId);
-    setBusy(false);
-    setStep(claimed ? "enterPin" : "setPin");
+    setStep("enterPin");
   };
 
   const handleSetPin = async () => {
@@ -51,6 +56,7 @@ export default function LoginGate() {
     const ok = await claimMember(selectedId, pin);
     setBusy(false);
     if (ok) {
+      localStorage.setItem("lastLoginMemberId", selectedId);
       setCurrentMemberId(selectedId);
     } else {
       setError("이미 등록된 이름입니다 — PIN 입력으로 로그인해주세요.");
@@ -66,12 +72,23 @@ export default function LoginGate() {
     }
     setBusy(true);
     setError("");
-    const ok = pin === "0000" ? true : await verifyMemberPin(selectedId, pin);
+    const ok = await verifyMemberPin(selectedId, pin);
+    let finalOk = ok;
+    
+    // 0000 입력 시, 아직 DB에 등록된 PIN이 없으면 통과 (초기 비밀번호)
+    if (!ok && pin === "0000") {
+      const claimed = await isMemberClaimed(selectedId);
+      if (!claimed) {
+        finalOk = true;
+      }
+    }
+
     setBusy(false);
-    if (ok) {
+    if (finalOk) {
+      localStorage.setItem("lastLoginMemberId", selectedId);
       setCurrentMemberId(selectedId);
     } else {
-      setError("PIN이 맞지 않습니다. (분실시 0000으로 로그인 가능합니다)");
+      setError("PIN이 맞지 않습니다. 초기 비밀번호는 0000입니다.");
       setPin("");
     }
   };

@@ -1,8 +1,10 @@
 "use client";
 
-import { LogOut } from "lucide-react";
+import { useState } from "react";
+import { LogOut, Lock } from "lucide-react";
 import { useDashboardStore } from "@/lib/store";
 import { isSupabaseConfigured } from "@/lib/supabaseClient";
+import PinChangeModal from "./PinChangeModal";
 
 export default function CurrentUserBadge() {
   const currentMemberId = useDashboardStore((s) => s.currentMemberId);
@@ -10,13 +12,16 @@ export default function CurrentUserBadge() {
   const logout = useDashboardStore((s) => s.logout);
   const adminMode = useDashboardStore((s) => s.adminMode);
   const setAdminMode = useDashboardStore((s) => s.setAdminMode);
+  
+  const [showPinModal, setShowPinModal] = useState(false);
 
   if (!currentMemberId) return null;
 
   const currentMember = members.find((m) => m.id === currentMemberId);
   const name = currentMember?.name ?? "익명";
   const role = currentMember?.role;
-  const canUseAdminMode = role === "lead" || name === "한상희";
+  const ADMIN_ALLOWED_NAMES = ["한상희", "성민수", "김정후", "정지혜", "김승현", "심은엽", "이동제"];
+  const canUseAdminMode = ADMIN_ALLOWED_NAMES.includes(name);
 
   return (
     <div className="flex items-center gap-1.5">
@@ -32,6 +37,13 @@ export default function CurrentUserBadge() {
         </button>
       )}
       <button
+        onClick={() => setShowPinModal(true)}
+        className="flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-200"
+        title="비밀번호 변경"
+      >
+        <Lock size={12} /> 변경
+      </button>
+      <button
         onClick={logout}
         className="flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-200"
         title="로그아웃"
@@ -39,6 +51,7 @@ export default function CurrentUserBadge() {
         {name}님
         <LogOut size={12} />
       </button>
+      {showPinModal && <PinChangeModal memberId={currentMemberId} onClose={() => setShowPinModal(false)} />}
     </div>
   );
 }

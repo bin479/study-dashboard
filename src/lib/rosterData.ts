@@ -96,7 +96,6 @@ export const REAL_ROSTER: SeedMember[] = [
   { studentId: "20224212", name: "국서원", role: "student", cohort: "본과 2학년", active: true },
   { studentId: "20224213", name: "한유진", role: "student", cohort: "본과 2학년", active: true },
   { studentId: "20224214", name: "박승원", role: "student", cohort: "본과 2학년", active: true },
-  { studentId: "20224215", name: "김성후", role: "student", cohort: "본과 2학년", active: true },
   { studentId: "20224216", name: "정지혜", role: "student", cohort: "본과 2학년", active: true },
   { studentId: "20224218", name: "최현", role: "student", cohort: "본과 2학년", active: true },
   { studentId: "20224219", name: "김지연", role: "student", cohort: "본과 2학년", active: true },
