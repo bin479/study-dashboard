@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useRef } from "react";
-import { CheckSquare, Square, ClipboardList, Plus, Search, HelpCircle, FileText, Download, Upload, Trash2, ChevronDown, ChevronUp, Split } from "lucide-react";
+import { CheckSquare, Square, ClipboardList, Plus, Search, HelpCircle, FileText, Download, Upload, Trash2, ChevronDown, ChevronUp, Split, RotateCcw } from "lucide-react";
 import { useDashboardStore } from "@/lib/store";
 import { scoreRestoration } from "@/lib/scoring";
 import { findSubjectHeads, findGroupLeader } from "@/lib/roles";
@@ -38,6 +38,7 @@ export default function RestorationView() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const autoSplitRestoration = useDashboardStore((s) => s.autoSplitRestoration);
+  const clearRestorationItemsForSubject = useDashboardStore((s) => s.clearRestorationItemsForSubject);
   const bulkUpdateRestorationItems = useDashboardStore((s) => s.bulkUpdateRestorationItems);
   const examChecklist = useDashboardStore((s) => s.examChecklist);
   const toggleExamChecklistItem = useDashboardStore((s) => s.toggleExamChecklistItem);
@@ -613,12 +614,24 @@ export default function RestorationView() {
             placeholder="총 문항 수"
           />
         </div>
-        <button
-          onClick={handleAutoSplit}
-          className="mt-3 flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white active:scale-95 disabled:opacity-40"
-        >
-          <Split size={16} /> 과목부장에게 개별 {splitForm.total}문항 쪼개어 자동 배정
-        </button>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            onClick={handleAutoSplit}
+            className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white active:scale-95 disabled:opacity-40"
+          >
+            <Split size={16} /> 과목부장에게 개별 {splitForm.total}문항 쪼개어 자동 배정
+          </button>
+          <button
+            onClick={() => {
+              if (!splitForm.subject) return;
+              if (!confirm(`"${splitForm.subject}" 배정을 전부 지우고 다시 시작할까요? (지금까지 매긴 수합/해설 점수도 같이 지워집니다)`)) return;
+              clearRestorationItemsForSubject(splitForm.subject);
+            }}
+            className="flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-600 active:scale-95"
+          >
+            <RotateCcw size={16} /> "{splitForm.subject}" 배정 리셋
+          </button>
+        </div>
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden mb-4">

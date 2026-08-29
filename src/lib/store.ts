@@ -198,6 +198,7 @@ interface DashboardState {
   updateRestorationItem: (id: string, patch: Partial<RestorationItem>) => void;
   removeRestorationItem: (id: string) => void;
   clearRestorationItems: () => void;
+  clearRestorationItemsForSubject: (subject: string) => void;
   autoSplitRestoration: (subject: string, totalQuestions: number, collectorMemberIds: string[]) => void;
   bulkUpdateRestorationItems: (subject: string, collectorMemberId: string | null, items: { number: number; explainerIds: string[] }[]) => void;
   importPivotTableAssignments: (subject: string, assignments: { collectorId: string; explainerId: string; questionNum: number }[]) => void;
@@ -945,7 +946,16 @@ export const useDashboardStore = create<DashboardState>()(
         const supabase = getSupabase();
         if (supabase) supabase.from("restoration_items").delete().neq("id", "dummy").then();
       },
-      
+
+      clearRestorationItemsForSubject: (subject) => {
+        set((state) => ({
+          restorationItems: state.restorationItems.filter((r) => r.subject !== subject),
+        }));
+        const supabase = getSupabase();
+        if (supabase) supabase.from("restoration_items").delete().eq("subject", subject).then();
+      },
+
+
       setRestorationItems: (items) => {
         set({ restorationItems: items });
         const supabase = getSupabase();
