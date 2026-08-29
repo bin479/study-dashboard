@@ -64,6 +64,7 @@ export default function ScheduleView() {
   const updateLectureInfo = useDashboardStore((s) => s.updateLectureInfo);
   const setBonus = useDashboardStore((s) => s.setBonus);
   const setDraftMember = useDashboardStore((s) => s.setDraftMember);
+  const setActualDuration = useDashboardStore((s) => s.setActualDuration);
   const setProofMember = useDashboardStore((s) => s.setProofMember);
   const autoAssignAll = useDashboardStore((s) => s.autoAssignAll);
   const addLecture = useDashboardStore((s) => s.addLecture);
@@ -611,6 +612,10 @@ export default function ScheduleView() {
           onUpdateLecture={(info) => updateLectureInfo(selectedLecture.id, info)}
           onSetDraftMember={setDraftMember}
           onSetProofMember={setProofMember}
+          onSetActualDuration={(minutes) => {
+            setActualDuration(selectedLecture.id, minutes);
+            setSelectedLecture(null);
+          }}
         />
       )}
 

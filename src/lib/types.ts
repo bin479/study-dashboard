@@ -32,6 +32,7 @@ export interface Lecture {
   sessionNumber?: string; // 과목별 학습부 회차 번호, 예: "24"
   originalSessionNumber?: string;
   originalTopic?: string;
+  actualDurationMin?: number; // 실제 진행 시간(분) — 그룹장/과목부장이 직접 입력
 }
 
 export type MemberRole = "student" | "lead" | "subjectHead" | "admin";

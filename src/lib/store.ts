@@ -10,7 +10,7 @@ import {
   generateMockMembers,
   generateRestorationItems,
 } from "./mockData";
-import { applyScheduleAction, ScheduleActionType } from "./scheduleActions";
+import { applyActualDuration, applyScheduleAction, ScheduleActionType } from "./scheduleActions";
 import { parseLecturesCSV, parseMembersCSV, toGoogleSheetsCSVExportURL } from "./csv";
 import { findGroupMembers, splitQuestionsEvenly } from "./roles";
 import { STUDY_GROUPS } from "./studyGroups";
@@ -166,6 +166,7 @@ interface DashboardState {
   addActivityLog: (log: Omit<ActivityLogEntry, "id" | "timestamp">) => void;
 
   runScheduleAction: (lectureId: string, action: ScheduleActionType) => void;
+  setActualDuration: (lectureId: string, actualDurationMin: number) => void;
   updateLectureInfo: (
     lectureId: string,
     info: { subject?: string; professor?: string; startTime?: string; endTime?: string; sessionNumber?: string }
@@ -447,6 +448,17 @@ export const useDashboardStore = create<DashboardState>()(
         set({ pastStates: [...pastStates, { lectures, assignments }].slice(-10) });
 
         const result = applyScheduleAction(lectures, assignments, lectureId, action);
+        set({ lectures: result.lectures, assignments: result.assignments });
+        syncRows("lectures", diffChanged(lectures, result.lectures));
+        syncRows("assignments", diffChanged(assignments, result.assignments));
+        get().autoAssignAll({ onlyUnassigned: true });
+      },
+
+      setActualDuration: (lectureId, actualDurationMin) => {
+        const { lectures, assignments, pastStates } = get();
+        set({ pastStates: [...pastStates, { lectures, assignments }].slice(-10) });
+
+        const result = applyActualDuration(lectures, assignments, lectureId, actualDurationMin);
         set({ lectures: result.lectures, assignments: result.assignments });
         syncRows("lectures", diffChanged(lectures, result.lectures));
         syncRows("assignments", diffChanged(assignments, result.assignments));

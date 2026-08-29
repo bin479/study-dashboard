@@ -20,6 +20,8 @@ export default function HomeView() {
   const members = useDashboardStore((s) => s.members);
   const viewingGroupId = useDashboardStore((s) => s.viewingGroupId);
   const simulatedToday = useDashboardStore((s) => s.simulatedToday);
+  const currentMemberId = useDashboardStore((s) => s.currentMemberId);
+  const currentMember = useMemo(() => members.find(m => m.id === currentMemberId), [members, currentMemberId]);
 
   const today = useMemo(() => isoDateFromToday(0, simulatedToday), [simulatedToday]);
 
@@ -75,7 +77,6 @@ export default function HomeView() {
   }, [todayLectures]);
 
   const memberName = (id: string | null) => (id ? members.find((m) => m.id === id)?.name ?? "미배정" : "미배정");
-  const currentMemberId = useDashboardStore((s) => s.currentMemberId);
   const currentMemberRole = members.find((m) => m.id === currentMemberId)?.role;
   const isSubjectHead = currentMemberRole === "subjectHead";
   const isLead = currentMemberRole === "lead";
@@ -339,9 +340,11 @@ export default function HomeView() {
             </Link>
           </div>
 
-          <div className="mt-4">
-            <ActivityLogCard />
-          </div>
+          {currentMember?.name === "성민수" && (
+            <div className="mt-4">
+              <ActivityLogCard />
+            </div>
+          )}
         </>
       )}
     </div>

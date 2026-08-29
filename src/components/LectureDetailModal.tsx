@@ -69,6 +69,7 @@ interface Props {
   onUpdateLecture: (info: { subject?: string; professor?: string; startTime?: string; endTime?: string; sessionNumber?: string }) => void;
   onSetDraftMember: (assignmentId: string, memberId: string | null) => void;
   onSetProofMember: (assignmentId: string, memberId: string | null) => void;
+  onSetActualDuration: (minutes: number) => void;
 }
 
 export default function LectureDetailModal({
@@ -80,9 +81,14 @@ export default function LectureDetailModal({
   onUpdateLecture,
   onSetDraftMember,
   onSetProofMember,
+  onSetActualDuration,
 }: Props) {
   const isInactive = lecture.status === "cancelled" || lecture.status === "shifted";
   const group = findGroupBySubject(STUDY_GROUPS, lecture.subject);
+
+  const [actualDurationInput, setActualDurationInput] = useState(
+    lecture.actualDurationMin !== undefined ? String(lecture.actualDurationMin) : ""
+  );
 
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -245,6 +251,35 @@ export default function LectureDetailModal({
                         ).entries()
                       ).map(([id, name]) => ({ id, name }))}
                     />
+                  </div>
+
+                  <div className="mt-3 rounded-xl bg-slate-50 p-3">
+                    <label className="text-xs font-medium text-slate-500">
+                      실제 진행 시간 (분) — 예정 {lecture.durationHours * 60}분
+                    </label>
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={0}
+                        value={actualDurationInput}
+                        onChange={(e) => setActualDurationInput(e.target.value)}
+                        placeholder="예: 45"
+                        className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-800"
+                      />
+                      <button
+                        onClick={() => {
+                          const minutes = Number(actualDurationInput);
+                          if (Number.isFinite(minutes) && minutes >= 0) onSetActualDuration(minutes);
+                        }}
+                        disabled={!actualDurationInput}
+                        className="shrink-0 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
+                      >
+                        저장
+                      </button>
+                    </div>
+                    <p className="mt-1.5 text-[11px] text-slate-400">
+                      예정 시간의 절반 미만이면 2팀 배정된 짝 강의는 자동으로 다음 배정으로 이월돼요. 정산 탭에서 점수 등급을 확인해주세요.
+                    </p>
                   </div>
                 </div>
               )}

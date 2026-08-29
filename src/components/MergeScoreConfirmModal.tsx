@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { CheckCircle2, X } from "lucide-react";
 import { Assignment, Lecture, Member } from "@/lib/types";
-import { draftBasePoints, proofBasePoints } from "@/lib/scoring";
+import { draftBasePoints, proofBasePoints, suggestDurationTier } from "@/lib/scoring";
 
 interface Props {
   assignment: Assignment;
@@ -15,13 +15,22 @@ interface Props {
 }
 
 export default function MergeScoreConfirmModal({ assignment, lecture, draftMemberName, proofMemberName, onClose, onConfirm }: Props) {
-  const isMerged = lecture.subject.includes("&");
+  // 병합된 강의(topic이 "A & B")거나, 실제 진행 시간을 입력해둔 강의면
+  // 조기종료 등급 옵션을 보여준다 — scheduleActions.ts의 merge_next는 topic만
+  // 합치고 subject는 안 건드리므로 subject가 아니라 topic으로 판단해야 한다.
+  const isMerged = !!lecture.topic?.includes(" & ") || lecture.actualDurationMin !== undefined;
   const baseDraft = draftBasePoints(lecture.subjectType, lecture.durationHours);
   const baseProof = proofBasePoints(lecture.subjectType, lecture.durationHours, assignment.proofAtDraftLevel);
 
-  const [selectedDraftScore, setSelectedDraftScore] = useState<number>(baseDraft);
-  const [selectedProofScore, setSelectedProofScore] = useState<number>(baseProof);
-  const [reason, setReason] = useState<string>("정상 진행");
+  // 실제 진행 시간이 입력돼 있으면 그 시간에 맞는 등급을 기본으로 골라준다 —
+  // 그룹장은 확인만 하고, 다르면 다른 옵션을 눌러 바꾸면 된다.
+  const suggested = lecture.actualDurationMin
+    ? suggestDurationTier(lecture.durationHours, lecture.actualDurationMin)
+    : null;
+
+  const [selectedDraftScore, setSelectedDraftScore] = useState<number>(suggested?.draft ?? baseDraft);
+  const [selectedProofScore, setSelectedProofScore] = useState<number>(suggested?.proof ?? baseProof);
+  const [reason, setReason] = useState<string>(suggested?.reason ?? "정상 진행");
 
   const handleOption = (draft: number, proof: number, text: string) => {
     setSelectedDraftScore(draft);
@@ -54,9 +63,16 @@ export default function MergeScoreConfirmModal({ assignment, lecture, draftMembe
             </div>
           </div>
 
+          {lecture.actualDurationMin !== undefined && (
+            <div className="rounded-xl bg-indigo-50 p-3 border border-indigo-100 text-xs text-indigo-800">
+              ⏱ 실제 진행 시간 <b>{lecture.actualDurationMin}분</b> (예정 {lecture.durationHours * 60}분) 입력됨
+              {suggested ? ` — 아래 "${suggested.reason}"를 자동으로 추천해뒀어요. 확인 후 그대로 확정하거나 다른 등급을 골라주세요.` : " — 정상 진행 범위라 추천 등급은 없어요."}
+            </div>
+          )}
+
           <div className="space-y-2">
             <p className="text-xs font-semibold text-slate-700 mb-2">스코어링 옵션 선택 (자동 계산)</p>
-            
+
             <button
               onClick={() => handleOption(baseDraft, baseProof, "정상 진행")}
               className={`w-full text-left rounded-xl p-3 border text-sm transition-all ${

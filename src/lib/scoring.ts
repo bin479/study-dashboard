@@ -51,6 +51,31 @@ export function proofBasePoints(
   return SCORING_RULES.proofFlat[subjectType];
 }
 
+/** 실제 진행 시간이 짧을 때(조기종료) MergeScoreConfirmModal에서 고르는 점수 등급표 —
+ * 그룹장이 최종 확인하기 전에 기본으로 골라줄 등급을 정하는 데 쓴다. */
+export const DURATION_TIERS = [
+  { minRatio: 0.6, draft: 8, proof: 5, reason: "조기종료 - 밀도 유사" },
+  { minRatio: 0.4, draft: 6, proof: 3, reason: "조기종료 - 신규/양 적음" },
+  { minRatio: 0.2, draft: 4, proof: 2.5, reason: "조기종료 - 간단 수정" },
+  { minRatio: 0, draft: 2, proof: 1, reason: "조기종료 - 기출만 추가" },
+] as const;
+
+/**
+ * 예정 시간 대비 실제 진행 시간이 짧으면(50% 미만) 등급표에서 기본값을 골라 반환한다.
+ * 정상 진행(50% 이상)이면 null — MergeScoreConfirmModal은 이때 "정상 진행" 기본점수를 쓴다.
+ */
+export function suggestDurationTier(
+  scheduledDurationHours: number,
+  actualDurationMin: number
+): { draft: number; proof: number; reason: string } | null {
+  const scheduledMin = scheduledDurationHours * 60;
+  if (scheduledMin <= 0) return null;
+  const ratio = actualDurationMin / scheduledMin;
+  if (ratio >= 0.5) return null;
+  const tier = DURATION_TIERS.find((t) => ratio >= t.minRatio) ?? DURATION_TIERS[DURATION_TIERS.length - 1];
+  return { draft: tier.draft, proof: tier.proof, reason: tier.reason };
+}
+
 /** Draft deadline: lecture date, next day 09:00 local. */
 export function draftDeadline(lecture: Lecture): Date {
   const d = new Date(`${lecture.date}T00:00:00`);

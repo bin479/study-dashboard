@@ -45,7 +45,8 @@ create table if not exists lectures (
   note text,
   "startTime" text,
   "endTime" text,
-  "sessionNumber" text
+  "sessionNumber" text,
+  "actualDurationMin" numeric
 );
 
 -- ── assignments ────────────────────────────────────────────────────────────

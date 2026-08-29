@@ -363,3 +363,50 @@ export function applyScheduleAction(
 
   return { lectures: nextLectures, assignments: nextAssignments, changes };
 }
+
+/**
+ * 실제 진행 시간(분)을 기록한다. "학습부 분할"로 팀이 2개(짝 강의)인데 실제로는
+ * 예정 시간의 절반도 안 채워졌으면, 짝 강의는 필요 없다고 보고 unassign과 같은
+ * 방식으로 그 배정조를 다음 배정 강의로 이월시키고 상태를 shifted로 남긴다.
+ * 짝이 없는 일반 강의는 실제 시간만 기록 — 점수 등급은 MergeScoreConfirmModal에서
+ * scoring.ts의 suggestDurationTier()로 확인·조정한다.
+ */
+export function applyActualDuration(
+  lectures: Lecture[],
+  assignments: Assignment[],
+  lectureId: string,
+  actualDurationMin: number
+): ScheduleActionResult {
+  const lecture = lectures.find((l) => l.id === lectureId);
+  if (!lecture) return { lectures, assignments, changes: [] };
+
+  let nextLectures = lectures.map((l) => (l.id === lectureId ? { ...l, actualDurationMin } : l));
+  let nextAssignments = assignments;
+  const changes: string[] = [`${lecture.period} ${lecture.subject}: 실제 진행 시간 ${actualDurationMin}분 기록`];
+
+  const scheduledMin = lecture.durationHours * 60;
+  const isCompressed = scheduledMin > 0 && actualDurationMin < scheduledMin * 0.5;
+
+  const twin = lectures.find(
+    (l) => l.id !== lectureId && l.date === lecture.date && l.order === lecture.order && l.status !== "shifted"
+  );
+
+  if (isCompressed && twin) {
+    const result = applyScheduleAction(nextLectures, nextAssignments, twin.id, "unassign");
+    nextLectures = result.lectures.map((l) =>
+      l.id === twin.id
+        ? {
+            ...l,
+            status: "shifted" as const,
+            note: `${lecture.period}가 짧게 끝나 1팀만 필요 — 배정조는 다음 강의로 이월됨`,
+          }
+        : l
+    );
+    nextAssignments = result.assignments;
+    changes.push(
+      `${twin.period} ${twin.subject}: 실제 진행 시간이 짧아 2팀 배정이 필요 없어졌습니다 — 배정조를 다음 강의로 이월했습니다.`
+    );
+  }
+
+  return { lectures: nextLectures, assignments: nextAssignments, changes };
+}
