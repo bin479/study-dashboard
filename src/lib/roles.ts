@@ -43,9 +43,11 @@ export function splitQuestionsEvenly(
   if (memberIds.length === 0 || total <= 0) return [];
   const base = Math.floor(total / memberIds.length);
   const remainder = total % memberIds.length;
+  // 나머지를 마지막 한 명에게 몰아주지 않고, 앞에서부터 한 명씩 +1 나눠준다
+  // (예: 11문제/8명 -> 1인당 2문제 x 3명 + 1문제 x 5명).
   let cursor = 1;
   return memberIds.map((memberId, idx) => {
-    const count = base + (idx === memberIds.length - 1 ? remainder : 0);
+    const count = base + (idx < remainder ? 1 : 0);
     const start = cursor;
     const end = cursor + count - 1;
     cursor += count;
