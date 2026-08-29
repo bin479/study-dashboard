@@ -545,8 +545,11 @@ export default function ScheduleView() {
                             let canClick = false;
                             if (adminMode && canUseAdminMode) {
                               canClick = true;
-                            } else if (currentMemberRole === "lead") {
+                            } else if (currentMemberName === "성민수") {
                               canClick = true;
+                            } else if (currentMemberRole === "lead") {
+                              const targetGroup = findGroupBySubject(STUDY_GROUPS, lecture.subject);
+                              canClick = targetGroup?.id === currentMember?.groupId;
                             } else if (currentMemberRole === "subjectHead") {
                               canClick = a.proofMemberId === currentMemberId;
                             }
