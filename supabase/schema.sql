@@ -70,7 +70,8 @@ create table if not exists assignments (
   "extraBonusesDraft" jsonb,
   "extraBonusesProof" jsonb,
   "draftOverrideScore" numeric,
-  "scorePublished" boolean not null default false
+  "draftScorePublished" boolean not null default false,
+  "proofScorePublished" boolean not null default false
 );
 
 -- ── restoration_items ──────────────────────────────────────────────────────

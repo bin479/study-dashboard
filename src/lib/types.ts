@@ -92,7 +92,8 @@ export interface Assignment {
   extraBonusesDraft?: ExtraBonus[];
   extraBonusesProof?: ExtraBonus[];
   draftOverrideScore?: number | null; // 그룹장이 수동으로 입력한 최종 확정 점수
-  scorePublished?: boolean; // 그룹장이 승인(점수 공개)했는지 여부
+  draftScorePublished?: boolean; // 그룹장이 초안 채점 내역을 초안자에게 공개했는지
+  proofScorePublished?: boolean; // 그룹장이 검안 채점 내역을 검안자에게 공개했는지
 }
 
 export interface RestorationItem {

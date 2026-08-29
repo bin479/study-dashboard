@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, Clock, ListChecks, ArrowRight, Trophy, ChevronRight, ExternalLink } from "lucide-react";
+import { AlertTriangle, Clock, ListChecks, ArrowRight, Trophy, ChevronRight, ExternalLink, Award } from "lucide-react";
 import { useDashboardStore } from "@/lib/store";
 import D1NoticeCard from "../D1NoticeCard";
 import StatusBadge from "../StatusBadge";
@@ -83,6 +83,19 @@ export default function HomeView() {
   const isNormalUser = !isSubjectHead && !isLead;
 
   const [reportModalData, setReportModalData] = useState<{ assignment: any, type: "draft" | "proof", lecture: any } | null>(null);
+  const [showMyReports, setShowMyReports] = useState(false);
+
+  const myPublishedReports = useMemo(() => {
+    if (!currentMemberId) return [];
+    type ReportItem = { type: "draft" | "proof"; assignment: Assignment; date: string };
+    const drafts: ReportItem[] = assignments
+      .filter((a) => a.draftMemberId === currentMemberId && a.draftScorePublished)
+      .map((a) => ({ type: "draft" as const, assignment: a, date: lectures.find((l) => l.id === a.lectureId)?.date || "" }));
+    const proofs: ReportItem[] = assignments
+      .filter((a) => a.proofMemberId === currentMemberId && a.proofScorePublished)
+      .map((a) => ({ type: "proof" as const, assignment: a, date: lectures.find((l) => l.id === a.lectureId)?.date || "" }));
+    return [...drafts, ...proofs].sort((a, b) => b.date.localeCompare(a.date));
+  }, [assignments, currentMemberId, lectures]);
 
   const myTasks = useMemo(() => {
     if (!currentMemberId) return [];
@@ -160,7 +173,7 @@ export default function HomeView() {
                 if (isLead || isNormalUser) {
                   return (
                     <button key={`draft-${a.id}-${idx}`} onClick={() => {
-                      if (a.scorePublished) setReportModalData({ assignment: a, type: "draft", lecture: lec });
+                      if (a.draftScorePublished) setReportModalData({ assignment: a, type: "draft", lecture: lec });
                       else alert("승인(채점 확정)이 완료되지 않아 아직 채점 내역을 볼 수 없습니다.");
                     }} className="group flex items-center justify-between rounded-lg bg-white/60 p-2 hover:bg-white hover:shadow-sm transition border border-transparent hover:border-indigo-100 w-full text-left">
                       <p className="font-medium text-indigo-700 text-xs">
@@ -186,7 +199,7 @@ export default function HomeView() {
                 if (isLead || isNormalUser) {
                   return (
                     <button key={`proof-${a.id}-${idx}`} onClick={() => {
-                      if (a.scorePublished) setReportModalData({ assignment: a, type: "proof", lecture: lec });
+                      if (a.proofScorePublished) setReportModalData({ assignment: a, type: "proof", lecture: lec });
                       else alert("승인(채점 확정)이 완료되지 않아 아직 채점 내역을 볼 수 없습니다.");
                     }} className="group flex items-center justify-between rounded-lg bg-white/60 p-2 hover:bg-white hover:shadow-sm transition border border-transparent hover:border-indigo-100 w-full text-left">
                       <p className="font-medium text-indigo-700 text-xs">
@@ -246,6 +259,51 @@ export default function HomeView() {
           type={reportModalData.type}
           onClose={() => setReportModalData(null)}
         />
+      )}
+
+      {currentMemberId && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <button
+            onClick={() => setShowMyReports((v) => !v)}
+            className="flex w-full items-center justify-between text-left"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                <Award size={18} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-800">학습부 평가 점수 보기</p>
+                <p className="text-xs text-slate-500">공개된 내 초안·검안 평가 {myPublishedReports.length}건</p>
+              </div>
+            </div>
+            <ChevronRight size={18} className={`text-slate-300 transition-transform ${showMyReports ? "rotate-90" : ""}`} />
+          </button>
+          {showMyReports && (
+            <div className="mt-3 space-y-1.5 border-t border-slate-100 pt-3">
+              {myPublishedReports.length === 0 && (
+                <p className="py-2 text-center text-xs text-slate-400">아직 공개된 평가 내역이 없습니다.</p>
+              )}
+              {myPublishedReports.map((item, idx) => {
+                const lec = lectures.find((l) => l.id === item.assignment.lectureId);
+                return (
+                  <button
+                    key={`myreport-${item.type}-${item.assignment.id}-${idx}`}
+                    onClick={() => setReportModalData({ assignment: item.assignment, type: item.type, lecture: lec })}
+                    className="group flex w-full items-center justify-between rounded-lg bg-slate-50 p-2 text-left hover:bg-slate-100 transition"
+                  >
+                    <p className="text-xs font-medium text-slate-700">
+                      <span className="mr-2 inline-block rounded bg-amber-100 px-2 py-0.5 text-[10px] text-amber-700">
+                        {item.type === "draft" ? "초안" : "검안"}
+                      </span>
+                      {lec ? `${lec.date} ${lec.subject}` : "강의 정보 없음"}
+                    </p>
+                    <ExternalLink size={13} className="text-slate-300 group-hover:text-slate-500" />
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       )}
 
       {isLead && <D1NoticeCard />}

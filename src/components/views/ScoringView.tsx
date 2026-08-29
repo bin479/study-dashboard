@@ -12,7 +12,6 @@ import { GROUP_DRAFT_SEQUENCES } from "@/lib/sequences";
 import StatusBadge from "../StatusBadge";
 import DraftEvaluationModal from "../DraftEvaluationModal";
 import ProofEvaluationModal from "../ProofEvaluationModal";
-import MergeScoreConfirmModal from "../MergeScoreConfirmModal";
 
 const BONUS_OPTIONS = Array.from(
   { length: (SCORING_RULES.bonusMax - SCORING_RULES.bonusMin) / SCORING_RULES.bonusStep + 1 },
@@ -40,7 +39,8 @@ export default function ScoringView() {
   const setProofAdjustment = useDashboardStore((s) => s.setProofAdjustment);
   const toggleProofAtDraftLevel = useDashboardStore((s) => s.toggleProofAtDraftLevel);
   const setDraftOverrideScore = useDashboardStore((s) => s.setDraftOverrideScore);
-  const toggleScorePublished = useDashboardStore((s) => s.toggleScorePublished);
+  const toggleDraftScorePublished = useDashboardStore((s) => s.toggleDraftScorePublished);
+  const toggleProofScorePublished = useDashboardStore((s) => s.toggleProofScorePublished);
   const viewingGroupId = useDashboardStore((s) => s.viewingGroupId);
   const viewingGroup = STUDY_GROUPS.find((g) => g.id === viewingGroupId);
   const adminMode = useDashboardStore((s) => s.adminMode);
@@ -64,7 +64,6 @@ export default function ScoringView() {
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [evaluatingDraftId, setEvaluatingDraftId] = useState<string | null>(null);
   const [evaluatingProofId, setEvaluatingProofId] = useState<string | null>(null);
-  const [confirmingMergeId, setConfirmingMergeId] = useState<string | null>(null);
 
   const setViewingGroupId = useDashboardStore((s) => s.setViewingGroupId);
   const simulatedToday = useDashboardStore((s) => s.simulatedToday);
@@ -453,7 +452,7 @@ export default function ScoringView() {
                             </p>
                           </div>
                           {(() => {
-                            const canSeeProof = isLead || assignment.scorePublished;
+                            const canSeeProof = isLead || assignment.proofScorePublished;
                             return (
                               <div>
                                 <p className="text-[10px] font-medium text-slate-400 text-right">검안</p>
@@ -464,20 +463,10 @@ export default function ScoringView() {
                             );
                           })()}
                         </div>
-                        {isLead && (
-                          <div className="flex flex-col items-end gap-1">
-                            {lecture.actualDurationMin != null && !assignment.scorePublished && (
-                              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
-                                ⏱ 실제 {lecture.actualDurationMin}분 · 확인 필요
-                              </span>
-                            )}
-                            <button
-                              onClick={() => setConfirmingMergeId(assignment.id)}
-                              className="rounded-lg bg-indigo-600 px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-indigo-700 active:scale-95 transition"
-                            >
-                              수동 점수 확정 (그룹장)
-                            </button>
-                          </div>
+                        {isLead && lecture.actualDurationMin != null && !assignment.proofScorePublished && (
+                          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                            ⏱ 실제 {lecture.actualDurationMin}분 · 확인 필요
+                          </span>
                         )}
                       </div>
                     </div>
@@ -579,16 +568,16 @@ export default function ScoringView() {
                               />
                             </div>
                             <div className="mt-2 border-t border-slate-200 pt-2 flex items-center justify-between">
-                              <p className="text-[11px] font-medium text-slate-400">채점 내역 공개 (그룹장 승인)</p>
+                              <p className="text-[11px] font-medium text-slate-400">초안자에게 채점 내역 공개</p>
                               <button
-                                onClick={() => toggleScorePublished(assignment.id)}
+                                onClick={() => toggleDraftScorePublished(assignment.id)}
                                 className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
-                                  assignment.scorePublished
+                                  assignment.draftScorePublished
                                     ? "bg-indigo-600 text-white"
                                     : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                                 }`}
                               >
-                                {assignment.scorePublished ? "승인됨 (공개 중)" : "승인 대기"}
+                                {assignment.draftScorePublished ? "승인됨 (공개 중)" : "승인 대기"}
                               </button>
                             </div>
                             <ExtraBonusEditor assignmentId={assignment.id} type="draft" bonuses={assignment.extraBonusesDraft} />
@@ -597,7 +586,7 @@ export default function ScoringView() {
                       </div>
 
                       {(() => {
-                        const canSeeProof = isLead || assignment.scorePublished;
+                        const canSeeProof = isLead || assignment.proofScorePublished;
                         if (!canSeeProof) {
                           return (
                             <div className="flex h-full min-h-[120px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-4 text-center text-slate-400">
@@ -637,7 +626,21 @@ export default function ScoringView() {
                                 <p className="font-mono text-[10px] text-slate-600 whitespace-pre-wrap">{assignment.proofAdjustmentReason}</p>
                               </div>
                             )}
-
+                            {isLead && (
+                              <div className="mt-2 border-t border-slate-200 pt-2 flex items-center justify-between">
+                                <p className="text-[11px] font-medium text-slate-400">검안자에게 채점 내역 공개</p>
+                                <button
+                                  onClick={() => toggleProofScorePublished(assignment.id)}
+                                  className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                                    assignment.proofScorePublished
+                                      ? "bg-indigo-600 text-white"
+                                      : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                                  }`}
+                                >
+                                  {assignment.proofScorePublished ? "승인됨 (공개 중)" : "승인 대기"}
+                                </button>
+                              </div>
+                            )}
                           </div>
                         );
                       })()}
@@ -676,28 +679,6 @@ export default function ScoringView() {
             onClose={() => setEvaluatingProofId(null)}
             onSave={(adjustment, reason) => {
               setProofAdjustment(row.assignment.id, adjustment, reason, row.assignment.proofAtDraftLevel);
-            }}
-          />
-        );
-      })()}
-
-      {confirmingMergeId && (() => {
-        const row = rows.find((r) => r.assignment.id === confirmingMergeId);
-        if (!row) return null;
-        return (
-          <MergeScoreConfirmModal
-            assignment={row.assignment}
-            lecture={row.lecture}
-            draftMemberName={memberName(members, row.assignment.draftMemberId)}
-            proofMemberName={memberName(members, row.assignment.proofMemberId)}
-            onClose={() => setConfirmingMergeId(null)}
-            onConfirm={(draftScore, proofScore, reason) => {
-              setDraftOverrideScore(row.assignment.id, draftScore);
-              setProofAdjustment(row.assignment.id, proofScore - row.breakdown.proofBase, reason, row.assignment.proofAtDraftLevel);
-              if (row.assignment.draftAdjustmentReason !== reason) {
-                setDraftAdjustment(row.assignment.id, draftScore - row.breakdown.draftBase, reason);
-              }
-              setConfirmingMergeId(null);
             }}
           />
         );
