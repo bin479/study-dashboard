@@ -130,6 +130,7 @@ export default function ScheduleView() {
   const ADMIN_ALLOWED_NAMES = ["한상희", "성민수", "김정후", "정지혜", "김승현", "심은엽", "이동제"];
   const canUseAdminMode = currentMemberName && ADMIN_ALLOWED_NAMES.includes(currentMemberName);
   const canUseSync = true;
+  const adminEditMode = adminMode && currentMemberName === "성민수";
 
   const weeks = useMemo(() => {
     const byWeek = new Map<string, Map<string, Lecture[]>>();
@@ -375,7 +376,7 @@ export default function ScheduleView() {
             >
               이번 주
             </button>
-            {adminMode && (
+            {adminEditMode && (
               <>
                 <div className="ml-auto flex items-center gap-2">
                   {currentMemberRole !== "subjectHead" && (

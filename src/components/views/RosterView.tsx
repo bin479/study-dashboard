@@ -17,6 +17,11 @@ export default function RosterView() {
   const assignments = useDashboardStore((s) => s.assignments);
   const setMemberRole = useDashboardStore((s) => s.setMemberRole);
   const adminMode = useDashboardStore((s) => s.adminMode);
+  
+  const currentMemberId = useDashboardStore((s) => s.currentMemberId);
+  const currentMember = members.find((m) => m.id === currentMemberId);
+  const adminEditMode = adminMode && currentMember?.name === "성민수";
+
   // 상단 GroupSwitcher와 같은 값을 공유한다 — 여기서 그룹을 고르면 대시보드 전체가 그 그룹 시야로 바뀐다.
   const groupFilter = useDashboardStore((s) => s.viewingGroupId);
   const setGroupFilter = useDashboardStore((s) => s.setViewingGroupId);
@@ -117,7 +122,7 @@ export default function RosterView() {
             <p className="text-sm text-slate-500">{members.length}명 · 5개 그룹으로 편성되어 있습니다.</p>
           </div>
         </div>
-        {adminMode && (
+        {adminEditMode && (
           <button
             onClick={handleResetAllPins}
             disabled={isResettingAll}
@@ -290,7 +295,7 @@ export default function RosterView() {
                     ))}
                   </select>
                   
-                  {adminMode && (
+                  {adminEditMode && (
                     <button
                       onClick={() => handleResetPin(m.id, m.name)}
                       className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-rose-500 transition-colors"

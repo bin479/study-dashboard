@@ -50,6 +50,7 @@ export default function ScoringView() {
   const currentMember = useMemo(() => members.find(m => m.id === currentMemberId), [members, currentMemberId]);
   const isSubjectHead = currentMember?.role === "subjectHead";
   const isLead = currentMember?.role === "lead";
+  const adminEditMode = adminMode && currentMember?.name === "성민수";
 
   const searchParams = useSearchParams();
 
@@ -482,7 +483,7 @@ export default function ScoringView() {
                             초안 · {memberName(members, assignment.draftMemberId)}
                           </p>
                           <div className="flex items-center gap-2">
-                            {(adminMode || ((isLead || isSubjectHead) && assignment.draftMemberId !== currentMemberId)) && (
+                            {(adminEditMode || ((isLead || isSubjectHead) && assignment.draftMemberId !== currentMemberId)) && (
                               <button
                                 onClick={() => setEvaluatingDraftId(assignment.id)}
                                 className="rounded bg-white px-2 py-1 text-[10px] font-semibold text-indigo-600 shadow-sm border border-indigo-100 hover:bg-indigo-50"
