@@ -17,7 +17,6 @@ export default function RestorationView() {
   const addRestorationItem = useDashboardStore((s) => s.addRestorationItem);
   const updateRestorationItem = useDashboardStore((s) => s.updateRestorationItem);
   const removeRestorationItem = useDashboardStore((s) => s.removeRestorationItem);
-  const clearRestorationItems = useDashboardStore((s) => s.clearRestorationItems);
   const setRestorationItems = useDashboardStore((s) => s.setRestorationItems);
   const addMemberExtraScores = useDashboardStore((s) => s.addMemberExtraScores);
   const savedRestorationStates = useDashboardStore((s) => s.savedRestorationStates);
@@ -443,16 +442,6 @@ export default function RestorationView() {
             <Upload size={14} />
           </button>
           <input type="file" accept=".json" className="hidden" ref={fileInputRef} onChange={handleLoadState} />
-          <button
-            onClick={() => {
-              if (confirm("정말 모든 복원 문항 배정을 초기화하시겠습니까? (이 작업은 되돌릴 수 없습니다)")) {
-                clearRestorationItems();
-              }
-            }}
-            className="flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-600 shadow-sm hover:bg-rose-50 transition-colors"
-          >
-            <Trash2 size={14} /> 전체 배정 초기화
-          </button>
         </div>
       </div>
 
