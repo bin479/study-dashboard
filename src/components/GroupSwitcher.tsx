@@ -19,7 +19,13 @@ export default function GroupSwitcher() {
     if (isNormalUser && viewingGroupId !== null) {
       setViewingGroupId(null);
     }
-  }, [isNormalUser, viewingGroupId, setViewingGroupId]);
+    // 관리자가 아닌 그룹장/과목부장은 자기 그룹 외에는 접근 불가 (전체보기도 불가)
+    if ((currentMemberRole === "lead" || currentMemberRole === "subjectHead") && !adminMode) {
+      if (viewingGroupId !== mem?.groupId && mem?.groupId) {
+        setViewingGroupId(mem.groupId);
+      }
+    }
+  }, [isNormalUser, viewingGroupId, setViewingGroupId, currentMemberRole, adminMode, mem?.groupId]);
 
   if (isNormalUser) {
     return (
@@ -33,16 +39,19 @@ export default function GroupSwitcher() {
 
   return (
     <div className="flex items-center gap-1.5 overflow-x-auto">
-      <button
-        onClick={() => setViewingGroupId(null)}
-        className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-          viewingGroupId === null ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-500"
-        }`}
-      >
-        전체 보기
-      </button>
+      {/* 관리자 모드가 켜져 있거나, 일반 조원일 때만(위에서 처리됨) 전체보기를 허용 */}
+      {(!(currentMemberRole === "lead" || currentMemberRole === "subjectHead") || adminMode) && (
+        <button
+          onClick={() => setViewingGroupId(null)}
+          className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+            viewingGroupId === null ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-500"
+          }`}
+        >
+          전체 보기
+        </button>
+      )}
       {STUDY_GROUPS.filter(g => {
-        if (currentMemberRole === "lead" && !adminMode) {
+        if ((currentMemberRole === "lead" || currentMemberRole === "subjectHead") && !adminMode) {
           return g.id === mem?.groupId;
         }
         return true;

@@ -50,31 +50,15 @@ async function syncLecturesToSupabase(incoming) {
   if (lectureUpsertError) throw new Error(`lectures upsert 실패: ${lectureUpsertError.message}`);
 
   // 배정은 draftMemberId/proofMemberId만 갱신한다 — draftStatus/제출시각/가감점 등
-  // 이미 진행 중인 상태는 건드리지 않는다.
-  for (const row of assignmentRows) {
-    const { data: existing } = await supabase.from("assignments").select("id").eq("id", row.id).maybeSingle();
-    if (existing) {
-      await supabase
-        .from("assignments")
-        .update({ draftMemberId: row.draftMemberId, proofMemberId: row.proofMemberId })
-        .eq("id", row.id);
-    } else {
-      await supabase.from("assignments").insert({
-        id: row.id,
-        lectureId: row.lectureId,
-        draftMemberId: row.draftMemberId,
-        proofMemberId: row.proofMemberId,
-        draftStatus: "pending",
-        proofStatus: "pending",
-        recordingUploaded: false,
-        bonusPoints: 0,
-        draftAdjustment: 0,
-        draftAdjustmentReason: "",
-        proofAdjustment: 0,
-        proofAdjustmentReason: "",
-        proofAtDraftLevel: false,
-      });
-    }
+  // 이미 진행 중인 상태는 건드리지 않는다. upsert에 이 두 컬럼만 담아 보내면
+  // (PostgREST는 요청 본문에 없는 컬럼은 UPDATE 시 건드리지 않는다) 기존 행을
+  // 안전하게 갱신하면서도, 없던 배정은 스키마의 컬럼 기본값으로 새로 생긴다.
+  // 강의별로 select 후 update/insert하던 이전 방식은 283건 기준 500번 넘는
+  // 순차 요청이 되어 Netlify 함수 실행 제한(10초)을 넘겨 504가 났었다.
+  for (let i = 0; i < assignmentRows.length; i += 500) {
+    const chunk = assignmentRows.slice(i, i + 500);
+    const { error } = await supabase.from("assignments").upsert(chunk, { onConflict: "id" });
+    if (error) throw new Error(`assignments upsert 실패: ${error.message}`);
   }
 
   // 시트에서 사라진 강의(수업이 삭제/재편된 경우) 정리 — assignments는 FK

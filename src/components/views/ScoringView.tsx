@@ -141,6 +141,7 @@ export default function ScoringView() {
         if (!lecture) return null;
         
         if (isSubjectHead && !adminMode) {
+          if (viewingGroupId && findGroupBySubject(STUDY_GROUPS, lecture.subject)?.id !== viewingGroupId) return null;
           if (!currentMember?.subjects?.includes(lecture.subject)) return null;
         } else {
           if (viewingGroupId && findGroupBySubject(STUDY_GROUPS, lecture.subject)?.id !== viewingGroupId) return null;

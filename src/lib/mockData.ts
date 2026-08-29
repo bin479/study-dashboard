@@ -55,11 +55,13 @@ export function generateMockMembers(): Member[] {
     }
     const isClassRep = CLASS_REPS.includes(m.name);
     if (isClassRep) {
+      const sequenceGroup = memberGroupByName.get(m.name);
       return {
         id: `mem_${i}`,
         ...m,
         role: "subjectHead" as const,
         subjects: ALL_SUBJECTS,
+        groupId: sequenceGroup,
       };
     }
     const subjectHeadGroup = subjectHeadGroupByName.get(m.name);
