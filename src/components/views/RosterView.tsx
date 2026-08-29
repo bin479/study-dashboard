@@ -21,6 +21,7 @@ export default function RosterView() {
   const currentMemberId = useDashboardStore((s) => s.currentMemberId);
   const currentMember = members.find((m) => m.id === currentMemberId);
   const adminEditMode = adminMode && currentMember?.name === "성민수";
+  const canResetPin = adminMode && (currentMember?.name === "성민수" || currentMember?.name === "한상희");
 
   // 상단 GroupSwitcher와 같은 값을 공유한다 — 여기서 그룹을 고르면 대시보드 전체가 그 그룹 시야로 바뀐다.
   const groupFilter = useDashboardStore((s) => s.viewingGroupId);
@@ -122,7 +123,7 @@ export default function RosterView() {
             <p className="text-sm text-slate-500">{members.length}명 · 5개 그룹으로 편성되어 있습니다.</p>
           </div>
         </div>
-        {adminEditMode && (
+        {canResetPin && (
           <button
             onClick={handleResetAllPins}
             disabled={isResettingAll}
@@ -283,19 +284,23 @@ export default function RosterView() {
               </div>
               <div className="mt-2 pl-12">
                 <div className="flex items-center justify-between gap-2">
-                  <select
-                    value={m.role}
-                    onChange={(e) => setMemberRole(m.id, e.target.value as MemberRole, m.subjects)}
-                    className="rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600"
-                  >
-                    {ROLE_OPTIONS.map((r) => (
-                      <option key={r} value={r}>
-                        {ROLE_LABELS[r]}
-                      </option>
-                    ))}
-                  </select>
+                  {adminEditMode ? (
+                    <select
+                      value={m.role}
+                      onChange={(e) => setMemberRole(m.id, e.target.value as MemberRole, m.subjects)}
+                      className="rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600"
+                    >
+                      {ROLE_OPTIONS.map((r) => (
+                        <option key={r} value={r}>
+                          {ROLE_LABELS[r]}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="text-xs font-medium text-slate-600">{ROLE_LABELS[m.role]}</span>
+                  )}
                   
-                  {adminEditMode && (
+                  {canResetPin && (
                     <button
                       onClick={() => handleResetPin(m.id, m.name)}
                       className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-rose-500 transition-colors"
@@ -315,10 +320,10 @@ export default function RosterView() {
                         return (
                           <button
                             key={subject}
-                            onClick={() => toggleSubject(m, subject)}
-                            className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                              on ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-500"
-                            }`}
+                            onClick={() => adminEditMode && toggleSubject(m, subject)}
+                            className={`rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
+                              on ? "bg-indigo-100 text-indigo-700" : (adminEditMode ? "bg-slate-100 text-slate-400 hover:bg-slate-200" : "bg-slate-100 text-slate-400")
+                            } ${!adminEditMode && "cursor-default"}`}
                           >
                             {subject}
                           </button>
