@@ -142,9 +142,9 @@ export default function ScoringView() {
         const lecture = lectures.find((l) => l.id === a.lectureId);
         if (!lecture) return null;
         
-        if (isSubjectHead) {
+        if (isSubjectHead && !adminMode) {
           if (viewingGroupId && findGroupBySubject(STUDY_GROUPS, lecture.subject)?.id !== viewingGroupId) return null;
-          if (a.proofMemberId !== currentMemberId) return null;
+          if (!currentMember?.subjects?.includes(lecture.subject)) return null;
         } else {
           if (viewingGroupId && findGroupBySubject(STUDY_GROUPS, lecture.subject)?.id !== viewingGroupId) return null;
         }
@@ -489,12 +489,14 @@ export default function ScoringView() {
                             초안 · {memberName(members, assignment.draftMemberId)}
                           </p>
                           <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => setEvaluatingDraftId(assignment.id)}
-                              className="rounded bg-white px-2 py-1 text-[10px] font-semibold text-indigo-600 shadow-sm border border-indigo-100 hover:bg-indigo-50"
-                            >
-                              초안 평가하기
-                            </button>
+                            {(adminMode || ((isLead || isSubjectHead) && assignment.draftMemberId !== currentMemberId && assignment.proofMemberId !== currentMemberId)) && (
+                              <button
+                                onClick={() => setEvaluatingDraftId(assignment.id)}
+                                className="rounded bg-white px-2 py-1 text-[10px] font-semibold text-indigo-600 shadow-sm border border-indigo-100 hover:bg-indigo-50"
+                              >
+                                초안 평가하기
+                              </button>
+                            )}
                             <StatusBadge status={assignment.draftStatus} />
                           </div>
                         </div>
@@ -635,88 +637,7 @@ export default function ScoringView() {
                                 <p className="font-mono text-[10px] text-slate-600 whitespace-pre-wrap">{assignment.proofAdjustmentReason}</p>
                               </div>
                             )}
-                            {isLead && (
-                              <>
-                                <label className="text-[11px] font-medium text-slate-400">검안 보너스 퀵 추가 (최대 +1.5점)</label>
-                                <div className="flex flex-wrap gap-1.5">
-                                  <button
-                                    onClick={() => {
-                                      const existing = assignment.extraBonusesProof?.find(b => b.reason === "서식/가독성 개선");
-                                      if (existing) removeExtraBonus(assignment.id, "proof", existing.id);
-                                      else addExtraBonus(assignment.id, "proof", 0.5, "서식/가독성 개선");
-                                    }}
-                                    className={`rounded px-2 py-1 text-[10px] font-medium transition-colors ${
-                                      assignment.extraBonusesProof?.some(b => b.reason === "서식/가독성 개선")
-                                        ? "bg-indigo-600 text-white"
-                                        : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100"
-                                    }`}
-                                  >
-                                    서식/가독성 개선 +0.5
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      const existing = assignment.extraBonusesProof?.find(b => b.reason === "구조화/시각화");
-                                      if (existing) removeExtraBonus(assignment.id, "proof", existing.id);
-                                      else addExtraBonus(assignment.id, "proof", 1.0, "구조화/시각화");
-                                    }}
-                                    className={`rounded px-2 py-1 text-[10px] font-medium transition-colors ${
-                                      assignment.extraBonusesProof?.some(b => b.reason === "구조화/시각화")
-                                        ? "bg-indigo-600 text-white"
-                                        : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100"
-                                    }`}
-                                  >
-                                    구조화/시각화 +1.0
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      const existing = assignment.extraBonusesProof?.find(b => b.reason === "내용 보완");
-                                      if (existing) removeExtraBonus(assignment.id, "proof", existing.id);
-                                      else addExtraBonus(assignment.id, "proof", 1.0, "내용 보완");
-                                    }}
-                                    className={`rounded px-2 py-1 text-[10px] font-medium transition-colors ${
-                                      assignment.extraBonusesProof?.some(b => b.reason === "내용 보완")
-                                        ? "bg-indigo-600 text-white"
-                                        : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100"
-                                    }`}
-                                  >
-                                    내용 보완 +1.0
-                                  </button>
-                                </div>
-                                
-                                <details className="mt-1">
-                                  <summary className="cursor-pointer text-[10px] font-medium text-slate-400 hover:text-slate-600 outline-none">
-                                    평가 기준 자세히 보기
-                                  </summary>
-                                  <div className="mt-2 space-y-3 rounded-lg border border-slate-100 bg-slate-50 p-3 text-[11px] text-slate-600 leading-relaxed shadow-sm">
-                                    <div>
-                                      <p className="font-bold text-slate-800">1. 서식 / 가독성 개선 (+0.5점)</p>
-                                      <p className="mb-1 text-slate-500">핵심 기준: 시각적 정렬, 폰트/스타일 통일, 불필요한 군더더기 제거로 가독성 향상</p>
-                                      <ul className="list-inside list-disc space-y-0.5">
-                                        <li className="text-emerald-700"><span className="font-medium">인정 (O):</span> 개조식(불릿/번호) 깔끔 변환, 말투(구어체) 전면 교정, 레이아웃/줄간격 일관된 정돈, 키워드 볼드체/형광펜 일관 적용</li>
-                                        <li className="text-rose-700"><span className="font-medium">불인정 (X):</span> 단순 줄바꿈/폰트 크기만 변경, 일부 문서에만 적용되고 일관성 없는 경우</li>
-                                      </ul>
-                                    </div>
-                                    <div>
-                                      <p className="font-bold text-slate-800">2. 구조화 / 시각화 (+1.0점)</p>
-                                      <p className="mb-1 text-slate-500">핵심 기준: 질환·약물·기전을 표, 알고리즘, 다이어그램으로 재구성하여 학습 효율 획기적 향상</p>
-                                      <ul className="list-inside list-disc space-y-0.5">
-                                        <li className="text-emerald-700"><span className="font-medium">인정 (O):</span> 감별진단/약물 비교 표 정리, 순서도/다이어그램 직접 제작, 슬라이드 이미지에 레이블/판독 포인트 매핑</li>
-                                        <li className="text-rose-700"><span className="font-medium">불인정 (X):</span> 기존 슬라이드 표/그림 단순 캡처, 텍스트 2~3줄짜리 아주 단순한 박스 처리</li>
-                                      </ul>
-                                    </div>
-                                    <div>
-                                      <p className="font-bold text-slate-800">3. 내용 보완 (+1.0점)</p>
-                                      <p className="mb-1 text-slate-500">핵심 기준: 교수님 설명, 오개념, 누락된 기출 등을 실질적으로 채워 넣은 경우</p>
-                                      <ul className="list-inside list-disc space-y-0.5">
-                                        <li className="text-emerald-700"><span className="font-medium">인정 (O):</span> 누락된 교수님 설명/임상 팁 추가, 오개념 바로잡기, 최신 가이드라인 변경점/기출 연계 해설 추가</li>
-                                        <li className="text-rose-700"><span className="font-medium">불인정 (X):</span> 단순 오탈자 교정 몇 개, 수업에서 다루지 않은 과도한 외부 전공의 수준 지식 불필요하게 덧붙임</li>
-                                      </ul>
-                                    </div>
-                                  </div>
-                                </details>
-                                <ExtraBonusEditor assignmentId={assignment.id} type="proof" bonuses={assignment.extraBonusesProof} />
-                              </>
-                            )}
+
                           </div>
                         );
                       })()}
