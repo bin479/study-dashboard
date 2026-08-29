@@ -127,7 +127,7 @@ export default function ScheduleView() {
   const currentMemberName = currentMember?.name;
   const isNormalUser = currentMemberRole !== "lead" && currentMemberRole !== "subjectHead";
 
-  const ADMIN_ALLOWED_NAMES = ["한상희", "성민수", "김정후", "정지혜", "김승현", "심은엽", "이동제"];
+  const ADMIN_ALLOWED_NAMES = ["한상희", "성민수"];
   const canUseAdminMode = currentMemberName && ADMIN_ALLOWED_NAMES.includes(currentMemberName);
   const canUseSync = true;
   const adminEditMode = adminMode && currentMemberName === "성민수";

@@ -20,7 +20,7 @@ export default function CurrentUserBadge() {
   const currentMember = members.find((m) => m.id === currentMemberId);
   const name = currentMember?.name ?? "익명";
   const role = currentMember?.role;
-  const ADMIN_ALLOWED_NAMES = ["한상희", "성민수", "김정후", "정지혜", "김승현", "심은엽", "이동제"];
+  const ADMIN_ALLOWED_NAMES = ["한상희", "성민수"];
   const canUseAdminMode = ADMIN_ALLOWED_NAMES.includes(name);
 
   return (

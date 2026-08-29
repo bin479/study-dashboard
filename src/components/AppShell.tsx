@@ -62,7 +62,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const currentMemberRole = currentMember?.role;
   const currentMemberName = currentMember?.name;
   
-  const ADMIN_ALLOWED_NAMES = ["한상희", "성민수", "김정후", "정지혜", "김승현", "심은엽", "이동제"];
+  const ADMIN_ALLOWED_NAMES = ["한상희", "성민수"];
   const canUseAdminMode = currentMemberName && ADMIN_ALLOWED_NAMES.includes(currentMemberName);
 
   // 로컬 스토리지에 캐시된 이전 멤버(김성후 등) 강제 삭제
@@ -88,6 +88,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
     if (currentMemberRole === "subjectHead") {
       return items.filter(item => !["/restoration", "/roster", "/settlement", "/sync", "/feedbacks"].includes(item.href));
     }
+    if (currentMemberName === "김정후") {
+      return items.filter(item => !["/scoring", "/restoration", "/roster", "/sync", "/feedbacks"].includes(item.href));
+    }
     
     return items.filter(item => !["/scoring", "/restoration", "/roster", "/settlement", "/sync", "/feedbacks"].includes(item.href));
   }, [adminMode, canUseAdminMode, currentMemberRole, currentMemberName]);
@@ -103,6 +106,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
     }
     if (currentMemberRole === "subjectHead") {
       return items.filter(item => item.href !== "/more" && item.href !== "/restoration");
+    }
+    if (currentMemberName === "김정후") {
+      return items.filter(item => item.href !== "/scoring" && item.href !== "/restoration");
     }
     
     return items.filter(item => item.href !== "/scoring" && item.href !== "/restoration" && item.href !== "/more");

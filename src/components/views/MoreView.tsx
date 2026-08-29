@@ -32,7 +32,7 @@ export default function MoreView() {
       return LINKS;
     }
     
-    if (currentMemberRole === "lead") {
+    if (currentMemberRole === "lead" || currentMemberName === "김정후") {
       return LINKS.filter(item => item.href === "/settlement");
     }
     
