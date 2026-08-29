@@ -12,6 +12,7 @@ import { GROUP_DRAFT_SEQUENCES } from "@/lib/sequences";
 import StatusBadge from "../StatusBadge";
 import DraftEvaluationModal from "../DraftEvaluationModal";
 import ProofEvaluationModal from "../ProofEvaluationModal";
+import MergeScoreConfirmModal from "../MergeScoreConfirmModal";
 
 const BONUS_OPTIONS = Array.from(
   { length: (SCORING_RULES.bonusMax - SCORING_RULES.bonusMin) / SCORING_RULES.bonusStep + 1 },
@@ -52,9 +53,9 @@ export default function ScoringView() {
   const searchParams = useSearchParams();
 
   const [tab, setTab] = useState<"leaderboard" | "detail">(() => {
-    // 그룹장이나 과목부장(관리자 모드 off)일 경우 기본 탭을 상세 내역으로
+    // 그룹장이나 과목부장일 경우 기본 탭을 상세 내역으로
     const currentMember = members.find(m => m.id === currentMemberId);
-    if (currentMember && (currentMember.role === "lead" || currentMember.role === "subjectHead") && !useDashboardStore.getState().adminMode) {
+    if (currentMember && (currentMember.role === "lead" || currentMember.role === "subjectHead")) {
       return "detail";
     }
     return "leaderboard";
@@ -63,6 +64,7 @@ export default function ScoringView() {
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [evaluatingDraftId, setEvaluatingDraftId] = useState<string | null>(null);
   const [evaluatingProofId, setEvaluatingProofId] = useState<string | null>(null);
+  const [confirmingMergeId, setConfirmingMergeId] = useState<string | null>(null);
 
   const setViewingGroupId = useDashboardStore((s) => s.setViewingGroupId);
   const simulatedToday = useDashboardStore((s) => s.simulatedToday);
@@ -436,19 +438,29 @@ export default function ScoringView() {
                           {lecture.date} · {lecture.professor} · {lecture.durationHours}h
                         </p>
                       </div>
-                      <div className="flex gap-4 text-right">
-                        <div>
-                          <p className="text-[10px] font-medium text-slate-400 text-right">초안</p>
-                          <p className={`text-lg font-bold ${breakdown.draftTotal < 0 ? "text-rose-600" : "text-indigo-700"}`}>
-                            {Math.round(breakdown.draftTotal * 10) / 10} pt
-                          </p>
+                      <div className="flex flex-col items-end gap-2">
+                        <div className="flex gap-4 text-right">
+                          <div>
+                            <p className="text-[10px] font-medium text-slate-400 text-right">초안</p>
+                            <p className={`text-lg font-bold ${breakdown.draftTotal < 0 ? "text-rose-600" : "text-indigo-700"}`}>
+                              {Math.round(breakdown.draftTotal * 10) / 10} pt
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-medium text-slate-400 text-right">검안</p>
+                            <p className={`text-lg font-bold ${breakdown.proofTotal < 0 ? "text-rose-600" : "text-indigo-700"}`}>
+                              {Math.round(breakdown.proofTotal * 10) / 10} pt
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-[10px] font-medium text-slate-400 text-right">검안</p>
-                          <p className={`text-lg font-bold ${breakdown.proofTotal < 0 ? "text-rose-600" : "text-indigo-700"}`}>
-                            {Math.round(breakdown.proofTotal * 10) / 10} pt
-                          </p>
-                        </div>
+                        {isLead && (
+                          <button
+                            onClick={() => setConfirmingMergeId(assignment.id)}
+                            className="rounded-lg bg-indigo-600 px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-indigo-700 active:scale-95 transition"
+                          >
+                            수동 점수 확정 (그룹장)
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -623,7 +635,7 @@ export default function ScoringView() {
                               step={0.5}
                               value={assignment.proofAdjustment}
                               onChange={(e) =>
-                                setProofAdjustment(assignment.id, Number(e.target.value), assignment.proofAdjustmentReason)
+                                setProofAdjustment(assignment.id, Number(e.target.value), assignment.proofAdjustmentReason, assignment.proofAtDraftLevel)
                               }
                               className="w-16 rounded-lg border border-slate-200 px-2 py-1 text-xs"
                             />
@@ -631,7 +643,7 @@ export default function ScoringView() {
                               type="text"
                               placeholder="사유"
                               value={assignment.proofAdjustmentReason}
-                              onChange={(e) => setProofAdjustment(assignment.id, assignment.proofAdjustment, e.target.value)}
+                              onChange={(e) => setProofAdjustment(assignment.id, assignment.proofAdjustment, e.target.value, assignment.proofAtDraftLevel)}
                               className="flex-1 rounded-lg border border-slate-200 px-2 py-1 text-xs"
                             />
                           </div>
@@ -753,7 +765,29 @@ export default function ScoringView() {
             proofMemberName={memberName(members, row.assignment.proofMemberId)}
             onClose={() => setEvaluatingProofId(null)}
             onSave={(adjustment, reason) => {
-              setProofAdjustment(row.assignment.id, adjustment, reason);
+              setProofAdjustment(row.assignment.id, adjustment, reason, row.assignment.proofAtDraftLevel);
+            }}
+          />
+        );
+      })()}
+
+      {confirmingMergeId && (() => {
+        const row = rows.find((r) => r.assignment.id === confirmingMergeId);
+        if (!row) return null;
+        return (
+          <MergeScoreConfirmModal
+            assignment={row.assignment}
+            lecture={row.lecture}
+            draftMemberName={memberName(members, row.assignment.draftMemberId)}
+            proofMemberName={memberName(members, row.assignment.proofMemberId)}
+            onClose={() => setConfirmingMergeId(null)}
+            onConfirm={(draftScore, proofScore, reason) => {
+              setDraftOverrideScore(row.assignment.id, draftScore);
+              setProofAdjustment(row.assignment.id, proofScore - row.breakdown.proofBase, reason, row.assignment.proofAtDraftLevel);
+              if (row.assignment.draftAdjustmentReason !== reason) {
+                setDraftAdjustment(row.assignment.id, draftScore - row.breakdown.draftBase, reason);
+              }
+              setConfirmingMergeId(null);
             }}
           />
         );

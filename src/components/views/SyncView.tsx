@@ -80,8 +80,8 @@ export default function SyncView() {
   const pullMembersFromSheet = useDashboardStore((s) => s.pullMembersFromSheet);
   const importLecturesCSV = useDashboardStore((s) => s.importLecturesCSV);
   const importMembersCSV = useDashboardStore((s) => s.importMembersCSV);
-  const addSyncLog = useDashboardStore((s) => s.addSyncLog);
-  const syncLog = useDashboardStore((s) => s.syncLog);
+  const activityLog = useDashboardStore((s) => s.activityLog);
+  const addActivityLog = useDashboardStore((s) => s.addActivityLog);
   const lectures = useDashboardStore((s) => s.lectures);
   const members = useDashboardStore((s) => s.members);
   const assignments = useDashboardStore((s) => s.assignments);
@@ -96,14 +96,16 @@ export default function SyncView() {
       const res = await fetch("/.netlify/functions/sheet-sync-now", { method: "POST" });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
-      addSyncLog({
+      addActivityLog({
+        type: "sync",
         direction: "pull",
         source: "학습부배정표.xlsx",
         summary: `강의 ${data.lectures}건 반영 (배정 ${data.assignments}건, 삭제 ${data.removed}건) — 새로고침하면 보입니다.`,
         status: "success",
       });
     } catch (e) {
-      addSyncLog({
+      addActivityLog({
+        type: "sync",
         direction: "pull",
         source: "학습부배정표.xlsx",
         summary: `동기화 실패: ${(e as Error).message}`,
@@ -168,7 +170,7 @@ export default function SyncView() {
         onUploadFile={(f) => readFile(f, (text) => importLecturesCSV(text, f.name))}
         onExport={() => {
           downloadCSV("timetable.csv", lecturesToCSV(lectures));
-          addSyncLog({ direction: "push", source: "timetable.csv", summary: `${lectures.length}개 강의 항목을 내보냈습니다.`, status: "success" });
+          addActivityLog({ type: "sync", direction: "push", source: "timetable.csv", summary: `${lectures.length}개 강의 항목을 내보냈습니다.`, status: "success" });
         }}
       />
 
@@ -181,7 +183,7 @@ export default function SyncView() {
         onUploadFile={(f) => readFile(f, (text) => importMembersCSV(text, f.name))}
         onExport={() => {
           downloadCSV("roster.csv", membersToCSV(members));
-          addSyncLog({ direction: "push", source: "roster.csv", summary: `${members.length}명의 멤버를 내보냈습니다.`, status: "success" });
+          addActivityLog({ type: "sync", direction: "push", source: "roster.csv", summary: `${members.length}명의 멤버를 내보냈습니다.`, status: "success" });
         }}
       />
 
@@ -191,7 +193,7 @@ export default function SyncView() {
         <button
           onClick={() => {
             downloadCSV("assignments.csv", assignmentsToCSV(assignments));
-            addSyncLog({ direction: "push", source: "assignments.csv", summary: `${assignments.length}건의 배정을 내보냈습니다.`, status: "success" });
+            addActivityLog({ type: "sync", direction: "push", source: "assignments.csv", summary: `${assignments.length}건의 배정을 내보냈습니다.`, status: "success" });
           }}
           className="mt-3 flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600"
         >
@@ -209,9 +211,9 @@ export default function SyncView() {
             <RotateCcw size={12} /> 목업 데이터로 초기화
           </button>
         </div>
-        {syncLog.length === 0 && <p className="text-xs text-slate-400">아직 동기화 기록이 없습니다.</p>}
+        {activityLog.length === 0 && <p className="text-xs text-slate-400">아직 동기화 기록이 없습니다.</p>}
         <div className="space-y-2">
-          {syncLog.map((log) => (
+          {activityLog.filter(log => log.type === "sync").map((log) => (
             <div key={log.id} className="flex items-start gap-2 text-xs">
               {log.direction === "pull" ? (
                 <ArrowDownToLine size={13} className="mt-0.5 shrink-0 text-indigo-500" />

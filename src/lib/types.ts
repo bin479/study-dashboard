@@ -121,13 +121,15 @@ export interface ExamChecklistItem {
   done: boolean;
 }
 
-export interface SyncLogEntry {
+export interface ActivityLogEntry {
   id: string;
   timestamp: string;
-  direction: "pull" | "push";
-  source: string;
+  type: "sync" | "evaluation" | "system";
+  direction?: "pull" | "push"; // For sync logs
+  source?: string;
   summary: string;
-  status: "success" | "error";
+  status: "success" | "error" | "info";
+  groupId?: string; // For evaluation logs
 }
 
 export interface SavedRestorationState {

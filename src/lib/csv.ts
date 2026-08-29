@@ -10,18 +10,39 @@ export function parseLecturesCSV(csvText: string): Lecture[] {
     header: true,
     skipEmptyLines: true,
   });
-  return data.map((row, idx) => {
+
+  // Extract merge list from columns that contain '제외할 강의명'
+  const mergeKeys = Object.keys(data[0] || {}).filter(k => k.includes("제외할 강의명"));
+  const mergeList = new Set<string>();
+  if (mergeKeys.length > 0) {
+    data.forEach(row => {
+      mergeKeys.forEach(k => {
+        const val = row[k]?.trim();
+        if (val) mergeList.add(val);
+      });
+    });
+  }
+
+  const lectures: Lecture[] = [];
+
+  data.forEach((row, idx) => {
+    if (!row.subject && !row.topic && !row.professor) return; // skip empty rows
+
     const entryType = (row.entryType?.trim() as Lecture["entryType"]) || "lecture";
-    return {
+    const subjectName = row.subject?.trim() || "";
+    const prof = row.professor?.trim() ? `(${row.professor?.trim()})` : "";
+    const subjectProf = `${subjectName}${prof}`; // e.g. "식품알레르기(문도식)"
+
+    const newLec: Lecture = {
       id: row.id?.trim() || uid("lec"),
       date: row.date?.trim(),
       period: row.period?.trim() || `${idx + 1}교시`,
       order: Number(row.order) || idx + 1,
-      subject: row.subject?.trim() || "",
+      subject: subjectName,
       topic: row.topic?.trim() || undefined,
       professor: row.professor?.trim() || "",
       subjectType: (row.subjectType?.trim().toLowerCase() === "minor" ? "minor" : "major") as SubjectType,
-      durationHours: Number(row.durationHours) || 2,
+      durationHours: Number(row.durationHours) || 1, // Defaulting to 1 for safer auto-merge math, usually CSV sets this to 2
       status: "scheduled" as const,
       entryType,
       assignable: row.assignable ? row.assignable.trim().toLowerCase() !== "false" : entryType === "lecture",
@@ -29,7 +50,31 @@ export function parseLecturesCSV(csvText: string): Lecture[] {
       endTime: row.endTime?.trim() || undefined,
       sessionNumber: row.sessionNumber?.trim() || undefined,
     };
+
+    if (mergeList.has(subjectProf) && lectures.length > 0) {
+      // Find previous assignable lecture on the same date to merge into
+      let prevIndex = lectures.length - 1;
+      while (prevIndex >= 0 && (lectures[prevIndex].date !== newLec.date || !lectures[prevIndex].assignable)) {
+        prevIndex--;
+      }
+
+      if (prevIndex >= 0) {
+        const prev = lectures[prevIndex];
+        prev.subject = `${prev.subject} & ${subjectName}`;
+        prev.durationHours += newLec.durationHours;
+        
+        newLec.status = "shifted";
+        newLec.assignable = false;
+        lectures.push(newLec);
+      } else {
+        lectures.push(newLec);
+      }
+    } else {
+      lectures.push(newLec);
+    }
   });
+
+  return lectures;
 }
 
 export function parseMembersCSV(csvText: string): Member[] {

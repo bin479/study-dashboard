@@ -25,7 +25,7 @@ export default function SettlementView() {
   const assignments = useDashboardStore((s) => s.assignments);
   const restorationItems = useDashboardStore((s) => s.restorationItems);
   const memberExtraScores = useDashboardStore((s) => s.memberExtraScores);
-  const addSyncLog = useDashboardStore((s) => s.addSyncLog);
+  const addActivityLog = useDashboardStore((s) => s.addActivityLog);
   const adminMode = useDashboardStore((s) => s.adminMode);
   const currentMemberId = useDashboardStore((s) => s.currentMemberId);
   
@@ -185,7 +185,8 @@ export default function SettlementView() {
     const filename = `${groupName}_학습부_${getFilenameDate()}.xlsx`;
     // 엑셀 내보내기는 그룹 필터링과 무관하게 전체 명단(allRows)을 사용
     downloadStudyExcel(filename, allRows);
-    addSyncLog({
+    addActivityLog({
+      type: "sync",
       direction: "push",
       source: filename,
       summary: `학습부 전체 명단 정산 내역 ${allRows.length}건을 내보냈습니다.`,
@@ -198,7 +199,8 @@ export default function SettlementView() {
     const filename = `${groupName}_복원해설_${getFilenameDate()}.xlsx`;
     // 엑셀 내보내기는 그룹 필터링과 무관하게 전체 명단(allRows)을 사용
     downloadRestorationExcel(filename, allRows);
-    addSyncLog({
+    addActivityLog({
+      type: "sync",
       direction: "push",
       source: filename,
       summary: `복원해설 전체 명단 정산 내역 ${allRows.length}건을 내보냈습니다.`,

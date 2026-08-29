@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { Assignment, ExamChecklistItem, Lecture, Member, MemberExtraScore, MemberRole, RestorationItem, SyncLogEntry } from "./types";
+import { Assignment, ExamChecklistItem, Lecture, Member, MemberExtraScore, MemberRole, RestorationItem, ActivityLogEntry } from "./types";
 import {
   generateAssignments,
   generateExamChecklist,
@@ -77,7 +77,8 @@ function syncRows<T extends object>(table: string, rows: T[]) {
     .upsert(rows as any[])
     .then(({ error }) => {
       if (error) {
-        useDashboardStore.getState().addSyncLog({
+        useDashboardStore.getState().addActivityLog({
+          type: "sync",
           direction: "push",
           source: table,
           summary: `동기화 실패: ${error.message}`,
@@ -100,7 +101,8 @@ function deleteRow(table: string, id: string) {
     .eq("id", id)
     .then(({ error }) => {
       if (error) {
-        useDashboardStore.getState().addSyncLog({
+        useDashboardStore.getState().addActivityLog({
+          type: "sync",
           direction: "push",
           source: table,
           summary: `삭제 실패: ${error.message}`,
@@ -135,7 +137,7 @@ interface DashboardState {
   restorationItems: RestorationItem[];
   examChecklist: ExamChecklistItem[];
   memberExtraScores: MemberExtraScore[];
-  syncLog: SyncLogEntry[];
+  activityLog: ActivityLogEntry[];
   sheetUrls: { lectures: string; members: string };
   noticeSettings: { draftRoom: string; proofRoom: string };
   viewingGroupId: string | null; // 상단 그룹 전환 스위처 — null이면 전체 보기
@@ -161,7 +163,7 @@ interface DashboardState {
   pullLecturesFromSheet: (url: string) => Promise<void>;
   pullMembersFromSheet: (url: string) => Promise<void>;
   setSheetUrl: (kind: "lectures" | "members", url: string) => void;
-  addSyncLog: (entry: Omit<SyncLogEntry, "id" | "timestamp">) => void;
+  addActivityLog: (log: Omit<ActivityLogEntry, "id" | "timestamp">) => void;
 
   runScheduleAction: (lectureId: string, action: ScheduleActionType) => void;
   updateLectureInfo: (
@@ -177,7 +179,7 @@ interface DashboardState {
   setBonus: (assignmentId: string, value: number) => void;
   resetAssignmentSubmission: (assignmentId: string) => void;
   setDraftAdjustment: (assignmentId: string, amount: number, reason: string) => void;
-  setProofAdjustment: (assignmentId: string, amount: number, reason: string) => void;
+  setProofAdjustment: (assignmentId: string, amount: number, reason: string, applyDraftLevel: boolean) => void;
   toggleProofAtDraftLevel: (assignmentId: string) => void;
   setDraftMember: (assignmentId: string, memberId: string | null) => void;
   setProofMember: (assignmentId: string, memberId: string | null) => void;
@@ -224,7 +226,7 @@ export const useDashboardStore = create<DashboardState>()(
     (set, get) => ({
       ...seed(),
       memberExtraScores: [],
-      syncLog: [],
+      activityLog: [],
       pastStates: [],
       savedRestorationStates: [],
       sheetUrls: { lectures: "", members: "" },
@@ -277,14 +279,13 @@ export const useDashboardStore = create<DashboardState>()(
           settingsRes.error;
 
         if (firstError || !membersRes.data?.length) {
-          // 원격에 아직 데이터가 없거나(최초 세팅 전) 접속 실패 — 로컬 mock 시드를 유지한다.
-          get().addSyncLog({
-            direction: "pull",
-            source: "supabase",
+          get().addActivityLog({
+            type: "system",
             summary: firstError
               ? `Supabase 초기 로드 실패: ${firstError.message}`
               : "Supabase에 데이터가 없어 로컬 목업으로 시작합니다. scripts/seed-supabase.ts를 실행하세요.",
             status: firstError ? "error" : "success",
+            groupId: "all"
           });
           set({ supabaseReady: true });
           return;
@@ -351,7 +352,7 @@ export const useDashboardStore = create<DashboardState>()(
       resetToMockData: () =>
         set({
           ...seed(),
-          syncLog: [],
+          activityLog: [],
         }),
 
       importLecturesCSV: (csvText, source) => {
@@ -359,18 +360,18 @@ export const useDashboardStore = create<DashboardState>()(
           const lectures = parseLecturesCSV(csvText);
           set({ lectures });
           syncRows("lectures", lectures);
-          get().addSyncLog({
-            direction: "pull",
-            source,
+          get().addActivityLog({
+            type: "system",
             summary: `${lectures.length}개 강의 항목을 가져왔습니다.`,
             status: "success",
+            groupId: "all"
           });
         } catch (e) {
-          get().addSyncLog({
-            direction: "pull",
-            source,
+          get().addActivityLog({
+            type: "system",
             summary: `강의 CSV 파싱 실패: ${(e as Error).message}`,
             status: "error",
+            groupId: "all"
           });
         }
       },
@@ -380,18 +381,18 @@ export const useDashboardStore = create<DashboardState>()(
           const members = parseMembersCSV(csvText);
           set({ members });
           syncRows("members", members);
-          get().addSyncLog({
-            direction: "pull",
-            source,
+          get().addActivityLog({
+            type: "system",
             summary: `${members.length}명의 멤버 명단을 가져왔습니다.`,
             status: "success",
+            groupId: "all"
           });
         } catch (e) {
-          get().addSyncLog({
-            direction: "pull",
-            source,
+          get().addActivityLog({
+            type: "system",
             summary: `멤버 CSV 파싱 실패: ${(e as Error).message}`,
             status: "error",
+            groupId: "all"
           });
         }
       },
@@ -404,11 +405,11 @@ export const useDashboardStore = create<DashboardState>()(
           const text = await res.text();
           get().importLecturesCSV(text, exportUrl);
         } catch (e) {
-          get().addSyncLog({
-            direction: "pull",
-            source: exportUrl,
+          get().addActivityLog({
+            type: "system",
             summary: `Google Sheets 연동 실패: ${(e as Error).message}. 시트가 "링크가 있는 모든 사용자"로 공유되어 있는지 확인하세요.`,
             status: "error",
+            groupId: "all"
           });
         }
       },
@@ -421,11 +422,11 @@ export const useDashboardStore = create<DashboardState>()(
           const text = await res.text();
           get().importMembersCSV(text, exportUrl);
         } catch (e) {
-          get().addSyncLog({
-            direction: "pull",
-            source: exportUrl,
+          get().addActivityLog({
+            type: "system",
             summary: `Google Sheets 연동 실패: ${(e as Error).message}. 시트가 "링크가 있는 모든 사용자"로 공유되어 있는지 확인하세요.`,
             status: "error",
+            groupId: "all"
           });
         }
       },
@@ -433,12 +434,12 @@ export const useDashboardStore = create<DashboardState>()(
       setSheetUrl: (kind, url) =>
         set((state) => ({ sheetUrls: { ...state.sheetUrls, [kind]: url } })),
 
-      addSyncLog: (entry) =>
+      addActivityLog: (log) =>
         set((state) => ({
-          syncLog: [
-            { id: uid("log"), timestamp: new Date().toISOString(), ...entry },
-            ...state.syncLog,
-          ].slice(0, 50),
+          activityLog: [
+            { id: uid("log"), timestamp: new Date().toISOString(), ...log },
+            ...state.activityLog,
+          ].slice(0, 100),
         })),
 
       runScheduleAction: (lectureId, action) => {
@@ -545,21 +546,68 @@ export const useDashboardStore = create<DashboardState>()(
       },
 
       setDraftAdjustment: (assignmentId, amount, reason) => {
-        set((state) => ({
-          assignments: state.assignments.map((a) =>
-            a.id === assignmentId ? { ...a, draftAdjustment: amount, draftAdjustmentReason: reason } : a
-          ),
-        }));
-        syncRow("assignments", { id: assignmentId, draftAdjustment: amount, draftAdjustmentReason: reason });
+        set((state) => {
+          const idx = state.assignments.findIndex((a) => a.id === assignmentId);
+          if (idx === -1) return state;
+          const newAssignments = [...state.assignments];
+          const a = newAssignments[idx];
+          
+          if (a.draftAdjustment !== amount || a.draftAdjustmentReason !== reason) {
+            a.draftAdjustment = amount;
+            a.draftAdjustmentReason = reason;
+            
+            const currentMember = state.members.find(m => m.id === state.currentMemberId);
+            const draftMember = state.members.find(m => m.id === a.draftMemberId);
+            if (currentMember && currentMember.groupId) {
+              const newLog: ActivityLogEntry = {
+                id: uid("log"),
+                timestamp: new Date().toISOString(),
+                type: "evaluation",
+                summary: `${currentMember.name} 과목부장이 ${draftMember?.name || "알 수 없음"}님의 초안을 평가했습니다.`,
+                status: "success",
+                groupId: currentMember.groupId
+              };
+              return { 
+                assignments: newAssignments,
+                activityLog: [newLog, ...state.activityLog].slice(0, 100)
+              };
+            }
+          }
+          return { assignments: newAssignments };
+        });
       },
 
-      setProofAdjustment: (assignmentId, amount, reason) => {
-        set((state) => ({
-          assignments: state.assignments.map((a) =>
-            a.id === assignmentId ? { ...a, proofAdjustment: amount, proofAdjustmentReason: reason } : a
-          ),
-        }));
-        syncRow("assignments", { id: assignmentId, proofAdjustment: amount, proofAdjustmentReason: reason });
+      setProofAdjustment: (assignmentId, amount, reason, applyDraftLevel) => {
+        set((state) => {
+          const idx = state.assignments.findIndex((a) => a.id === assignmentId);
+          if (idx === -1) return state;
+          const newAssignments = [...state.assignments];
+          const a = newAssignments[idx];
+          
+          if (a.proofAdjustment !== amount || a.proofAdjustmentReason !== reason || a.proofAtDraftLevel !== applyDraftLevel) {
+            a.proofAdjustment = amount;
+            a.proofAdjustmentReason = reason;
+            a.proofAtDraftLevel = applyDraftLevel;
+            
+            const currentMember = state.members.find(m => m.id === state.currentMemberId);
+            const proofMember = state.members.find(m => m.id === a.proofMemberId);
+            if (currentMember && currentMember.groupId) {
+              const newLog: ActivityLogEntry = {
+                id: uid("log"),
+                timestamp: new Date().toISOString(),
+                type: "evaluation",
+                summary: `${currentMember.name} 과목부장이 ${proofMember?.name || "알 수 없음"}님의 검안을 평가했습니다.`,
+                status: "success",
+                groupId: currentMember.groupId
+              };
+              return { 
+                assignments: newAssignments,
+                activityLog: [newLog, ...state.activityLog].slice(0, 100)
+              };
+            }
+          }
+          return { assignments: newAssignments };
+        });
       },
 
       toggleProofAtDraftLevel: (assignmentId) => {
@@ -616,8 +664,6 @@ export const useDashboardStore = create<DashboardState>()(
         set((state) => ({
           memberExtraScores: [...state.memberExtraScores, ...newScores],
         }));
-        // Note: In a real environment, we should sync this to a new Supabase table.
-        // For this frontend-only scope, Zustand persist will handle local storage.
       },
 
       removeMemberExtraScore: (id) => {
@@ -676,7 +722,6 @@ export const useDashboardStore = create<DashboardState>()(
       autoAssignAll: (options) => {
         const { members, assignments, lectures } = get();
         
-        // 1) 중복 배정조 정리 (버그로 인해 한 강의에 여러 배정조가 붙은 경우 첫 번째만 남김)
         const uniqueAssignments: Assignment[] = [];
         const seenLectures = new Set<string>();
         const deletedAssignmentIds: string[] = [];
@@ -690,17 +735,14 @@ export const useDashboardStore = create<DashboardState>()(
           }
         });
 
-        // 삭제된 중복 배정조 DB 동기화
         if (deletedAssignmentIds.length > 0) {
           deletedAssignmentIds.forEach((id) => deleteRow("assignments", id));
         }
 
         const lectureById = new Map(lectures.map((l) => [l.id, l]));
 
-        // 활성 과목만 필터링하고 시간순 정렬
         const activeMembers = members.filter((m) => m.active);
         
-        // 1.5) 배정조가 하나도 없는(미배정) 활성 강의를 찾아 빈 배정조 1개씩 강제 생성
         const missingAssignments: Assignment[] = [];
         lectures.forEach((l) => {
           if (l.assignable && l.status !== "cancelled" && l.status !== "shifted" && l.status !== "unassigned") {
@@ -747,7 +789,6 @@ export const useDashboardStore = create<DashboardState>()(
             return keyA > keyB ? 1 : -1;
           });
 
-        // 2) 실제 배정 로직 수행
         const poolCache = new Map<string, Member[]>();
         const cursors = new Map<string, number>();
         const groupCursors = new Map<string, number>();
@@ -757,7 +798,6 @@ export const useDashboardStore = create<DashboardState>()(
             let groupPool = findGroupMembers(activeMembers, STUDY_GROUPS, subject);
             const group = STUDY_GROUPS.find(g => g.subjects.includes(subject));
             
-            // 그룹장은 해당 그룹의 검안에서 제외
             if (group) {
               groupPool = groupPool.filter(m => !(m.groupId === group.id && m.role === "lead"));
             }
@@ -802,7 +842,7 @@ export const useDashboardStore = create<DashboardState>()(
           const proof = pool.length > 0 ? pool[(cursor + 1) % pool.length].id : null;
           cursors.set(lecture.subject, cursor + 1);
 
-          if (!draft && pool.length > 0) draft = pool[cursor % pool.length].id; // Fallback if group draft fails
+          if (!draft && pool.length > 0) draft = pool[cursor % pool.length].id;
 
           nextIds.set(a.id, { draft, proof });
         });
@@ -822,7 +862,6 @@ export const useDashboardStore = create<DashboardState>()(
       generateTestSettlementData: () => {
         const { members, assignments, addRestorationItem } = get();
         
-        // 1. Give some points to existing assignments
         const newAssignments = assignments.map((a, i) => {
           if (i % 3 === 0) {
             return {
@@ -840,7 +879,6 @@ export const useDashboardStore = create<DashboardState>()(
           return a;
         });
 
-        // 2. Add some restoration items
         const groupMembers = members.filter(m => m.groupId === "g1");
         if (groupMembers.length >= 2) {
           addRestorationItem({
@@ -1182,7 +1220,7 @@ export const useDashboardStore = create<DashboardState>()(
       // v6: 그룹장 아래 인원을 조원이 아닌 과목부장(role: subjectHead)으로 정정, 김건아 추가.
       // 옛 payload는 새 필드가 없으므로 병합하지 않고 버린다.
       version: 8,
-      migrate: () => ({ ...seed(), syncLog: [] }),
+      migrate: () => ({ ...seed(), activityLog: [] }),
       onRehydrateStorage: () => (state) => {
         state?.setHydrated();
       },

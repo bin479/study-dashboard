@@ -12,6 +12,7 @@ import { isoDateFromToday } from "@/lib/dates";
 import { findGroupBySubject } from "@/lib/roles";
 import { STUDY_GROUPS } from "@/lib/studyGroups";
 import { Assignment } from "@/lib/types";
+import ActivityLogCard from "../ActivityLogCard";
 
 export default function HomeView() {
   const lectures = useDashboardStore((s) => s.lectures);
@@ -87,6 +88,7 @@ export default function HomeView() {
     let drafts = assignments.filter(a => a.draftMemberId === currentMemberId && (a.draftStatus === "pending" || a.draftStatus === "delayed"));
     let proofs = assignments.filter(a => a.proofMemberId === currentMemberId && (a.proofStatus === "pending" || a.proofStatus === "delayed"));
     let toEvaluate: Assignment[] = [];
+    let toConfirmMerge: Assignment[] = [];
 
     if (isLead) {
       const mem = members.find((m) => m.id === currentMemberId);
@@ -102,16 +104,27 @@ export default function HomeView() {
           const proofNotEvaluated = !a.proofAdjustmentReason;
           return draftEvaluated && proofNotEvaluated;
         });
+
+        toConfirmMerge = assignments.filter(a => {
+          const lec = lectures.find(l => l.id === a.lectureId);
+          if (!lec) return false;
+          const group = findGroupBySubject(STUDY_GROUPS, lec.subject);
+          if (group?.id !== mem.groupId) return false;
+          
+          const isMerged = lec.subject.includes("&");
+          const isNotConfirmed = a.draftOverrideScore === undefined || a.draftOverrideScore === null;
+          return isMerged && isNotConfirmed;
+        });
       }
       
     }
 
-    return { drafts, proofs, toEvaluate };
+    return { drafts, proofs, toEvaluate, toConfirmMerge };
   }, [assignments, currentMemberId, isLead, lectures, members]);
 
   return (
     <div className="space-y-6">
-      {myTasks && (myTasks.drafts.length > 0 || myTasks.proofs.length > 0 || myTasks.toEvaluate.length > 0) && (
+      {myTasks && (myTasks.drafts.length > 0 || myTasks.proofs.length > 0 || myTasks.toEvaluate.length > 0 || myTasks.toConfirmMerge?.length > 0) && (
         <div className={`rounded-2xl border border-indigo-200 bg-indigo-50 shadow-sm ${isSubjectHead ? 'p-6 sm:p-8' : 'p-4'}`}>
           <div className="flex items-center gap-2 mb-2">
             <span className={`flex items-center justify-center rounded-full bg-indigo-600 text-white shadow ${isSubjectHead ? 'h-8 w-8' : 'h-6 w-6'}`}>
@@ -199,6 +212,19 @@ export default function HomeView() {
                     {lec ? `${lec.date} ${lec.subject}` : "강의 정보 없음"}
                   </p>
                   <ExternalLink size={14} className="text-indigo-300 group-hover:text-indigo-500" />
+                </Link>
+              );
+            })}
+
+            {myTasks.toConfirmMerge?.map(a => {
+              const lec = lectures.find(l => l.id === a.lectureId);
+              return (
+                <Link key={`confirm-${a.id}`} href={`/scoring?evaluateProof=${a.id}`} className="group flex items-center justify-between rounded-lg bg-indigo-100/60 p-2 hover:bg-indigo-100 hover:shadow-sm transition border border-indigo-200 hover:border-indigo-300">
+                  <p className={`font-medium text-indigo-700 ${isSubjectHead ? 'text-sm' : 'text-xs'}`}>
+                    <span className="mr-2 inline-block rounded bg-indigo-500 px-2 py-0.5 text-[10px] sm:text-xs text-white">수동 점수 확정 필요 (병합됨)</span>
+                    {lec ? `${lec.date} ${lec.subject}` : "강의 정보 없음"}
+                  </p>
+                  <ExternalLink size={14} className="text-indigo-400 group-hover:text-indigo-600" />
                 </Link>
               );
             })}
@@ -311,6 +337,10 @@ export default function HomeView() {
               </div>
               <ChevronRight size={18} className="text-slate-300" />
             </Link>
+          </div>
+
+          <div className="mt-4">
+            <ActivityLogCard />
           </div>
         </>
       )}

@@ -121,6 +121,37 @@ function loadSplitTitles(settingsSheet) {
   return titles;
 }
 
+function loadMergeTitles(settingsSheet) {
+  if (!settingsSheet) return new Set();
+  const range = settingsSheet["!ref"] ? XLSX.utils.decode_range(settingsSheet["!ref"]) : null;
+  if (!range) return new Set();
+  const maxRow = range.e.r + 1;
+  const maxCol = range.e.c + 1;
+  
+  let targetCol = -1;
+  for (let r = 1; r <= 3; r++) {
+    for (let c = 1; c <= maxCol; c++) {
+      const v = norm(cellAt(settingsSheet, r, c));
+      if (v && v.indexOf("제외할 강의명") !== -1) {
+        targetCol = c;
+        break;
+      }
+    }
+    if (targetCol !== -1) break;
+  }
+  
+  const titles = new Set();
+  if (targetCol !== -1) {
+    for (let r = 3; r <= maxRow; r++) {
+      const n = norm(cellAt(settingsSheet, r, targetCol));
+      if (n && n.indexOf("제외할 강의명") === -1) {
+        titles.add(n);
+      }
+    }
+  }
+  return titles;
+}
+
 /** 각 주차 헤더 행에서 C~G열(월~금) 날짜를 읽어 연도 보정까지 적용한다. */
 function readWeekDates(cell, headerRow) {
   const rawDates = {};
@@ -152,7 +183,7 @@ function readWeekDates(cell, headerRow) {
 }
 
 /** <시간표> 시트 — 강의 모양의 정본. */
-function parseTimetableSheet(sheet, splitTitles) {
+function parseTimetableSheet(sheet, splitTitles, mergeTitles) {
   const { anchorSpan, memberAnchor } = buildMergeMaps(sheet);
   const range = XLSX.utils.decode_range(sheet["!ref"]);
   const maxRow = range.e.r + 1;
@@ -219,6 +250,7 @@ function parseTimetableSheet(sheet, splitTitles) {
         const order = Math.round(periodNo);
 
         records.push({
+          raw,
           date: dateIso,
           order,
           period: span.rows === 1 ? `${order}교시` : `${order}~${order + span.rows - 1}교시`,
@@ -239,9 +271,33 @@ function parseTimetableSheet(sheet, splitTitles) {
 
   records.sort((a, b) => (a.date === b.date ? a.order - b.order : a.date < b.date ? -1 : 1));
 
+  // <설정> R열에 지정된 "학습부 통합" 강의는 바로 앞 강의와 한 학습부로 합쳐진다 —
+  // prev 쪽에 시간만 더하고, 이 레코드 자체는 결과 목록에서 뺀다(그대로 두면
+  // 화면에 병합된 큰 칸과 별도의 작은 칸이 겹쳐 보인다).
+  const mergedRecords = [];
+  for (let i = 0; i < records.length; i++) {
+    const r = records[i];
+    if (mergeTitles.has(r.raw) && mergedRecords.length > 0) {
+      let prevIndex = mergedRecords.length - 1;
+      while (prevIndex >= 0 && (mergedRecords[prevIndex].date !== r.date || !mergedRecords[prevIndex].assignable)) {
+        prevIndex--;
+      }
+      if (prevIndex >= 0) {
+        const prev = mergedRecords[prevIndex];
+        if (prev.subject !== r.subject) prev.subject = `${prev.subject} & ${r.subject}`;
+        prev.durationHours += r.durationHours;
+        prev.endTime = r.endTime;
+        const lastOrder = r.order + r.durationHours - 1;
+        prev.period = lastOrder === prev.order ? `${prev.order}교시` : `${prev.order}~${lastOrder}교시`;
+        continue;
+      }
+    }
+    mergedRecords.push(r);
+  }
+
   // <설정> T열에 지정된 "학습부 분할" 강의는 팀 2개(4명)이므로 강의 자체를 복제한다.
   const expanded = [];
-  records.forEach((r) => {
+  mergedRecords.forEach((r) => {
     if (r.split && r.assignable) {
       [1, 2].forEach((team) => {
         const clone = Object.assign({}, r);
@@ -342,7 +398,8 @@ function parseWorkbook(buffer) {
   if (!assignmentSheet) throw new Error("<학습부배정> 시트를 찾을 수 없습니다.");
 
   const splitTitles = loadSplitTitles(wb.Sheets["설정"]);
-  const lectures = parseTimetableSheet(timetableSheet, splitTitles);
+  const mergeTitles = loadMergeTitles(wb.Sheets["설정"]);
+  const lectures = parseTimetableSheet(timetableSheet, splitTitles, mergeTitles);
   const pairsByKey = parseAssignmentPairs(assignmentSheet);
 
   // 분할 강의(팀 2개)는 같은 date+order로 lecture 레코드가 2개 나오므로,

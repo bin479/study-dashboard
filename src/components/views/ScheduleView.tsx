@@ -19,7 +19,8 @@ import SchedulePreviewModal from "../SchedulePreviewModal";
 import LectureDetailModal from "../LectureDetailModal";
 import WallpaperModal from "../WallpaperModal";
 import D1NoticeCard from "../D1NoticeCard";
-import { Download } from "lucide-react";
+import { Download, RefreshCw, ExternalLink } from "lucide-react";
+import Link from "next/link";
 
 const shortDate = formatShortDate;
 const WEEKDAYS = ["월", "화", "수", "목", "금"];
@@ -65,14 +66,52 @@ export default function ScheduleView() {
   const viewingGroupId = useDashboardStore((s) => s.viewingGroupId);
   const pastStates = useDashboardStore((s) => s.pastStates);
   const adminMode = useDashboardStore((s) => s.adminMode);
+  const activityLog = useDashboardStore((s) => s.activityLog);
+  const addActivityLog = useDashboardStore((s) => s.addActivityLog);
+
+  const [sheetSyncBusy, setSheetSyncBusy] = useState(false);
+  const handleSheetSyncNow = async () => {
+    setSheetSyncBusy(true);
+    try {
+      const res = await fetch("/.netlify/functions/sheet-sync-now", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      addActivityLog({
+        type: "sync",
+        direction: "pull",
+        source: "학습부배정표.xlsx",
+        summary: `강의 ${data.lectures}건 반영 (배정 ${data.assignments}건, 삭제 ${data.removed}건) — 새로고침하면 보입니다.`,
+        status: "success",
+      });
+      // Optionally reload the page to fetch the new data
+      window.location.reload();
+    } catch (e) {
+      addActivityLog({
+        type: "sync",
+        direction: "pull",
+        source: "학습부배정표.xlsx",
+        summary: `동기화 실패: ${(e as Error).message}`,
+        status: "error",
+      });
+    }
+    setSheetSyncBusy(false);
+  };
+
+  const lastSyncLog = activityLog.find(log => log.type === "sync" && log.status === "success");
 
   const [pending, setPending] = useState<{ lectureId: string; action: ScheduleActionType } | null>(null);
   const [selectedLecture, setSelectedLecture] = useState<Lecture | null>(null);
   const [showWallpaperModal, setShowWallpaperModal] = useState(false);
 
   const currentMemberId = useDashboardStore((s) => s.currentMemberId);
-  const currentMemberRole = members.find((m) => m.id === currentMemberId)?.role;
+  const currentMember = members.find((m) => m.id === currentMemberId);
+  const currentMemberRole = currentMember?.role;
+  const currentMemberName = currentMember?.name;
   const isNormalUser = currentMemberRole !== "lead" && currentMemberRole !== "subjectHead";
+
+  const ADMIN_ALLOWED_NAMES = ["한상희", "성민수", "김정후", "정지혜", "김승현", "심은엽", "이동제"];
+  const canUseAdminMode = currentMemberName && ADMIN_ALLOWED_NAMES.includes(currentMemberName);
+  const canUseSync = canUseAdminMode || currentMemberRole === "lead";
 
   const weeks = useMemo(() => {
     const byWeek = new Map<string, Map<string, Lecture[]>>();
@@ -176,6 +215,22 @@ export default function ScheduleView() {
     };
   }, [pending, lectures, assignments, members]);
 
+  const toConfirmMerge = useMemo(() => {
+    if (currentMemberRole !== "lead") return [];
+    if (!currentMember || !currentMember.groupId) return [];
+    
+    return assignments.filter(a => {
+      const lec = lectures.find(l => l.id === a.lectureId);
+      if (!lec) return false;
+      const group = findGroupBySubject(STUDY_GROUPS, lec.subject);
+      if (group?.id !== currentMember.groupId) return false;
+      
+      const isMerged = lec.subject.includes("&");
+      const isNotConfirmed = a.draftOverrideScore === undefined || a.draftOverrideScore === null;
+      return isMerged && isNotConfirmed;
+    });
+  }, [assignments, currentMemberRole, currentMember, lectures]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
@@ -184,14 +239,60 @@ export default function ScheduleView() {
           <h1 className="text-lg font-semibold text-slate-900">실시간 시간표 &amp; 자동 배정 시뮬레이터</h1>
           <p className="text-sm text-slate-500">강의를 단축·연장·휴강 처리하면 배정조가 자동으로 롤오버됩니다.</p>
         </div>
-        <button
-          onClick={() => setShowWallpaperModal(true)}
-          className="flex items-center gap-2 rounded-xl bg-indigo-50 px-4 py-2.5 text-sm font-semibold text-indigo-600 active:scale-95 transition-all hover:bg-indigo-100"
-        >
-          <Download size={16} />
-          배경화면 다운로드
-        </button>
+        <div className="flex items-center gap-2">
+          {canUseSync && (
+            <div className="flex flex-col items-end">
+              <button
+                onClick={handleSheetSyncNow}
+                disabled={sheetSyncBusy}
+                className="flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2.5 text-sm font-semibold text-slate-700 active:scale-95 transition-all hover:bg-slate-200 disabled:opacity-50"
+              >
+                <RefreshCw size={16} className={sheetSyncBusy ? "animate-spin" : ""} />
+                {sheetSyncBusy ? "동기화 중..." : "동기화"}
+              </button>
+              {lastSyncLog && (
+                <span className="text-[10px] text-slate-400 mt-1 pr-1">
+                  최근: {new Date(lastSyncLog.timestamp).toLocaleTimeString("ko-KR", { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              )}
+            </div>
+          )}
+          <button
+            onClick={() => setShowWallpaperModal(true)}
+            className="flex items-center gap-2 rounded-xl bg-indigo-50 px-4 py-2.5 text-sm font-semibold text-indigo-600 active:scale-95 transition-all hover:bg-indigo-100 h-[40px] mt-0"
+            style={{ alignSelf: "flex-start" }}
+          >
+            <Download size={16} />
+            배경화면 다운로드
+          </button>
+        </div>
       </div>
+
+      {toConfirmMerge.length > 0 && (
+        <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 shadow-sm">
+          <p className="mb-2 text-sm font-bold text-indigo-900">내 할 일 알림 (그룹장)</p>
+          <div className="flex flex-col gap-2">
+            {toConfirmMerge.map((a) => {
+              const lec = lectures.find((l) => l.id === a.lectureId);
+              return (
+                <Link
+                  key={a.id}
+                  href={`/scoring?evaluateProof=${a.id}`}
+                  className="group flex items-center justify-between rounded-lg bg-indigo-100/60 p-2 hover:bg-indigo-100 hover:shadow-sm transition border border-indigo-200 hover:border-indigo-300"
+                >
+                  <p className="text-xs font-medium text-indigo-700 sm:text-sm">
+                    <span className="mr-2 inline-block rounded bg-indigo-500 px-2 py-0.5 text-[10px] text-white sm:text-xs">
+                      수동 점수 확정 필요 (병합됨)
+                    </span>
+                    {lec ? `${lec.date} ${lec.subject}` : "강의 정보 없음"}
+                  </p>
+                  <ExternalLink size={14} className="text-indigo-400 group-hover:text-indigo-600" />
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
           {activeWeek && (
         <div className="sticky top-[92px] z-10 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-sm backdrop-blur">
@@ -383,7 +484,16 @@ export default function ScheduleView() {
               ? dayLectures.filter((l) => l.subject === "신규 과목" || findGroupBySubject(STUDY_GROUPS, l.subject)?.id === viewingGroupId)
               : dayLectures;
 
-            return filteredLectures.map(lecture => {
+            const groupedLectures = new Map<string, Lecture[]>();
+            filteredLectures.forEach(l => {
+              const key = `${l.startTime}_${l.durationHours}`;
+              if (!groupedLectures.has(key)) groupedLectures.set(key, []);
+              groupedLectures.get(key)!.push(l);
+            });
+
+            return Array.from(groupedLectures.values()).map(group => {
+              const lecture = group[0];
+              const isSplit = group.length > 1;
               const startRow = lecture.startTime ? getTimeRow(lecture.startTime) : 2;
               const endRow = lecture.endTime ? getTimeRow(lecture.endTime) : startRow + lecture.durationHours;
               const isInactive = lecture.status === "cancelled" || lecture.status === "shifted";
@@ -429,7 +539,7 @@ export default function ScheduleView() {
                   <div className="flex flex-col items-center justify-center w-full h-full overflow-hidden px-1">
                     <p className="text-[11px] font-bold leading-tight line-clamp-2">
                       {lecture.topic && lecture.topic !== lecture.subject
-                        ? lecture.topic
+                        ? (isSplit ? lecture.topic.replace(/\s*\(\d+팀 배정\)/, "") : lecture.topic)
                         : `${lecture.subject}${lecture.sessionNumber ? ` ${lecture.sessionNumber}번` : ""}`}
                     </p>
                     {lecture.professor && (
@@ -440,9 +550,9 @@ export default function ScheduleView() {
                     {lecture.assignable && (
                       <div className="text-[9px] mt-1 opacity-85 font-medium leading-tight text-center">
                         {(() => {
-                          const rows = assignments.filter((a) => a.lectureId === lecture.id);
-                          if (rows.length === 0) return <span>미배정</span>;
-                          return rows.map((a, idx) => {
+                          const allRows = group.flatMap(l => assignments.filter((a) => a.lectureId === l.id));
+                          if (allRows.length === 0) return <span>미배정</span>;
+                          return allRows.map((a, idx) => {
                             const d = members.find(m => m.id === a.draftMemberId)?.name ?? "미배정";
                             const p = members.find(m => m.id === a.proofMemberId)?.name ?? "미배정";
                             return (

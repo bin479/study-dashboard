@@ -24,7 +24,6 @@ const DESKTOP_NAV_ITEMS = [
   { href: "/restoration", label: "복원", icon: ClipboardList },
   { href: "/roster", label: "멤버", icon: Users },
   { href: "/settlement", label: "정산", icon: Calculator },
-  { href: "/sync", label: "동기화", icon: RefreshCw },
 ];
 
 const MOBILE_NAV_ITEMS = [
