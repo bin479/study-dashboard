@@ -19,6 +19,24 @@ const READABILITY_TIERS = [
   { value: 1.5, label: "시각자료(그림·도식) 추가 등 대폭 개선" },
 ] as const;
 
+const CORRECTION_TIERS = [
+  {
+    value: "normal" as const,
+    title: "정상 교정 완료 (감점 없음)",
+    example: "오탈자·사소한 오류를 빠짐없이 확인하고 수정함. 내용상 틀린 부분이나 자료와 다른 부분을 바로잡음.",
+  },
+  {
+    value: "minor_neglect" as const,
+    title: "경미한 방치 (-0.5점)",
+    example: "오탈자 몇 개나 사소한 표기 오류를 놓침 — 전체 이해에는 지장이 없는 수준.",
+  },
+  {
+    value: "major_neglect" as const,
+    title: "심각한 방치 (-1.0점)",
+    example: "명백한 내용 오류·누락을 그대로 방치했거나, 검안을 형식적으로만(제목만 훑어봄 등) 진행함.",
+  },
+] as const;
+
 export default function ProofEvaluationModal({ assignment, lecture, proofMemberName, onClose, onSave }: Props) {
   const baseScore = proofBasePoints(lecture.subjectType, lecture.durationHours, assignment.proofAtDraftLevel);
 
@@ -137,15 +155,23 @@ export default function ProofEvaluationModal({ assignment, lecture, proofMemberN
 
             <div>
               <label className="text-xs font-medium text-slate-500">초안 오류·누락 교정 여부</label>
-              <select
-                value={correctionLevel}
-                onChange={(e) => setCorrectionLevel(e.target.value as any)}
-                className="mt-1 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-              >
-                <option value="normal">정상 교정 완료 (감점 없음)</option>
-                <option value="minor_neglect">경미한 방치 (-0.5점)</option>
-                <option value="major_neglect">심각한 방치 (-1.0점)</option>
-              </select>
+              <div className="mt-1 space-y-1.5">
+                {CORRECTION_TIERS.map((tier) => (
+                  <button
+                    key={tier.value}
+                    type="button"
+                    onClick={() => setCorrectionLevel(tier.value)}
+                    className={`w-full rounded-xl border p-2.5 text-left text-sm transition ${
+                      correctionLevel === tier.value
+                        ? "border-indigo-600 bg-indigo-50/50 ring-1 ring-indigo-600"
+                        : "border-slate-200 hover:border-indigo-200"
+                    }`}
+                  >
+                    <span className="font-semibold text-slate-900">{tier.title}</span>
+                    <p className="mt-0.5 text-xs text-slate-500">{tier.example}</p>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
