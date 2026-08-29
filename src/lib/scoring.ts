@@ -154,10 +154,17 @@ export function scoreAssignment(lecture: Lecture, assignment: Assignment): Assig
 
   // Base points are only earned once the work is actually submitted — a
   // pending/shifted assignment has no submission yet, so it scores 0.
-  const draftBase = draftSubmitted ? draftBasePoints(lecture.subjectType, lecture.durationHours) : 0;
-  const proofBase = proofSubmitted
+  let draftBase = draftSubmitted ? draftBasePoints(lecture.subjectType, lecture.durationHours) : 0;
+  let proofBase = proofSubmitted
     ? proofBasePoints(lecture.subjectType, lecture.durationHours, assignment.proofAtDraftLevel)
     : 0;
+
+  if (assignment.draftOverrideScore != null) {
+    draftBase = assignment.draftOverrideScore;
+  }
+  if (assignment.proofOverrideScore != null) {
+    proofBase = assignment.proofOverrideScore;
+  }
 
   const draftPenalty = draftSubmitted ? draftLatePenalty(lecture, draftSubmitted) : 0;
   const proofPenalty = proofSubmitted ? proofLatePenalty(assignment.draftSubmittedAt, proofSubmitted) : 0;
@@ -176,12 +183,8 @@ export function scoreAssignment(lecture: Lecture, assignment: Assignment): Assig
   const extraBonusesDraftTotal = (assignment.extraBonusesDraft || []).reduce((sum, b) => sum + b.amount, 0);
   const extraBonusesProofTotal = (assignment.extraBonusesProof || []).reduce((sum, b) => sum + b.amount, 0);
 
-  const draftTotal = assignment.draftOverrideScore != null
-    ? assignment.draftOverrideScore
-    : draftBase + draftPenalty + draftAdjustment + extraBonusesDraftTotal;
-  const proofTotal = assignment.proofOverrideScore != null
-    ? assignment.proofOverrideScore
-    : proofBase + proofPenalty + proofAdjustment + bonus + extraBonusesProofTotal;
+  const draftTotal = draftBase + draftPenalty + draftAdjustment + extraBonusesDraftTotal;
+  const proofTotal = proofBase + proofPenalty + proofAdjustment + bonus + extraBonusesProofTotal;
   const total = draftTotal + proofTotal;
 
   return {
