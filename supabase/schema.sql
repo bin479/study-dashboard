@@ -72,9 +72,10 @@ create table if not exists assignments (
 -- ── restoration_items ──────────────────────────────────────────────────────
 create table if not exists restoration_items (
   id text primary key,
+  subject text,
   "lectureId" text references lectures(id) on delete cascade,
   "collectorMemberId" text references members(id),
-  "explainerMemberId" text references members(id),
+  "explainerMemberIds" text[],
   "questionRangeStart" int,
   "questionRangeEnd" int,
   "totalQuestions" int,
@@ -84,6 +85,7 @@ create table if not exists restoration_items (
   "dueAt" timestamptz,
   "collectionBonus" numeric not null default 0,
   "collectionBonusReason" text not null default '',
+  "explanationBonusManual" numeric,
   "explanationAdjustmentReason" text not null default '',
   "rewriteRequested" boolean not null default false,
   "rewriteCompleted" boolean not null default false
