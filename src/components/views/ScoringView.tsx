@@ -51,6 +51,8 @@ export default function ScoringView() {
   const isSubjectHead = currentMember?.role === "subjectHead";
   const isLead = currentMember?.role === "lead";
   const adminEditMode = adminMode && currentMember?.name === "성민수";
+  const ADMIN_ALLOWED_NAMES = ["한상희", "성민수"];
+  const canUseAdminMode = adminMode && currentMember && ADMIN_ALLOWED_NAMES.includes(currentMember.name);
 
   const searchParams = useSearchParams();
 
@@ -404,6 +406,11 @@ export default function ScoringView() {
           {(() => {
             const filteredRows = rows.filter(({ assignment, lecture }) => {
               if (selectedSubject && lecture.subject !== selectedSubject) return false;
+              
+              if (isSubjectHead && !canUseAdminMode) {
+                if (assignment.proofMemberId !== currentMemberId) return false;
+              }
+
               const sq = searchQuery.trim().toLowerCase();
               if (!sq) return true;
               
