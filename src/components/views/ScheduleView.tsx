@@ -387,50 +387,7 @@ export default function ScheduleView() {
                       ↩ 되돌리기
                     </button>
                   )}
-                  <button
-                    onClick={() => {
-                      const date = activeWeek?.days[0]?.[0] || new Date().toISOString().split("T")[0];
-                      const newLecture: Lecture = {
-                        id: `lec_${Math.random().toString(36).slice(2, 9)}`,
-                        date,
-                        period: "1교시",
-                        startTime: "09:00",
-                        endTime: "10:00",
-                        durationHours: 1,
-                        originalDurationHours: 1,
-                        subject: "신규 과목",
-                        topic: "",
-                        professor: "",
-                        sessionNumber: "",
-                        entryType: "lecture",
-                        subjectType: "major",
-                        status: "scheduled",
-                        note: "",
-                        order: 1,
-                        assignable: true,
-                      };
-                      useDashboardStore.getState().addLecture(newLecture, {
-                        lectureId: newLecture.id,
-                        draftMemberId: null,
-                        proofMemberId: null,
-                        draftStatus: "pending",
-                        proofStatus: "pending",
-                        recordingUploaded: false,
-                        draftAdjustment: 0,
-                        proofAdjustment: 0,
-                        draftAdjustmentReason: "",
-                        proofAdjustmentReason: "",
-                        proofAtDraftLevel: false,
-                        draftSubmittedAt: null,
-                        proofSubmittedAt: null,
-                        bonusPoints: 0,
-                      });
-                      useDashboardStore.getState().runScheduleAction(newLecture.id, "restore");
-                    }}
-                    className="flex items-center gap-1 rounded-lg bg-teal-600 px-2.5 py-1.5 text-xs font-semibold text-white active:scale-95"
-                  >
-                    <Plus size={14} /> 수업 추가
-                  </button>
+                  {/* 수업 추가 버튼 임시 차단 */}
                 </div>
               </>
             )}
@@ -543,23 +500,6 @@ export default function ScheduleView() {
               return (
                 <div
                   key={lecture.id}
-                  draggable={!isNormalUser}
-                  onDragStart={(e) => {
-                    if (isNormalUser) return;
-                    e.dataTransfer.setData("text/plain", lecture.id);
-                  }}
-                  onDragOver={(e) => {
-                    if (isNormalUser) return;
-                    e.preventDefault();
-                  }}
-                  onDrop={(e) => {
-                    if (isNormalUser) return;
-                    e.preventDefault();
-                    const draggedId = e.dataTransfer.getData("text/plain");
-                    if (draggedId && draggedId !== lecture.id) {
-                      useDashboardStore.getState().swapLectures(draggedId, lecture.id);
-                    }
-                  }}
                   onClick={() => {
                     if (isNormalUser) return;
                     setSelectedLecture(lecture);
