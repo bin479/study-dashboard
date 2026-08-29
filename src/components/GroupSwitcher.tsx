@@ -12,7 +12,8 @@ export default function GroupSwitcher() {
 
   const mem = members.find((m) => m.id === currentMemberId);
   const currentMemberRole = mem?.role;
-  const isNormalUser = currentMemberRole !== "lead" && currentMemberRole !== "subjectHead";
+  const isJeonghoo = mem?.name === "김정후";
+  const isNormalUser = currentMemberRole !== "lead" && currentMemberRole !== "subjectHead" && !isJeonghoo;
   const adminMode = useDashboardStore((s) => s.adminMode);
 
   useEffect(() => {

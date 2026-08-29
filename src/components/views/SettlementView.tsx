@@ -30,7 +30,6 @@ export default function SettlementView() {
   const currentMemberId = useDashboardStore((s) => s.currentMemberId);
   
   const currentMember = useMemo(() => members.find(m => m.id === currentMemberId), [members, currentMemberId]);
-  const showMockDataButton = adminMode || currentMember?.name === "성민수";
   const viewingGroupId = useDashboardStore((s) => s.viewingGroupId);
   const viewingGroup = STUDY_GROUPS.find((g) => g.id === viewingGroupId);
 
@@ -250,16 +249,6 @@ export default function SettlementView() {
         >
           <Download size={16} /> 복원해설 엑셀
         </button>
-        {showMockDataButton && (
-          <div className="ml-auto">
-            <button
-              onClick={() => useDashboardStore.getState().generateTestSettlementData()}
-              className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600 active:scale-95"
-            >
-              🧪 가상 데이터 생성
-            </button>
-          </div>
-        )}
       </div>
 
       {/* 뷰 타입 선택 탭 */}
