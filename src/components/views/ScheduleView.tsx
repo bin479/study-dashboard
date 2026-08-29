@@ -541,12 +541,22 @@ export default function ScheduleView() {
                             const p = members.find(m => m.id === a.proofMemberId)?.name ?? "미배정";
                             const num = lectureNumberMap.get(lId);
                             const tier = getDefaultTier(lecture.subjectType, lecture.durationHours);
+                            
+                            let canClick = false;
+                            if (adminMode && canUseAdminMode) {
+                              canClick = true;
+                            } else if (currentMemberRole === "lead") {
+                              canClick = true;
+                            } else if (currentMemberRole === "subjectHead") {
+                              canClick = a.proofMemberId === currentMemberId;
+                            }
+
                             return (
                               <div 
                                 key={idx} 
-                                className={`flex flex-col items-center mt-1 pt-1 border-t border-black/5 rounded transition-colors ${!isJeonghoo ? "hover:bg-black/5 cursor-pointer" : ""}`}
+                                className={`flex flex-col items-center mt-1 pt-1 border-t border-black/5 rounded transition-colors ${canClick ? "hover:bg-black/5 cursor-pointer" : ""}`}
                                 onClick={(e) => {
-                                  if (isJeonghoo) return;
+                                  if (!canClick) return;
                                   e.stopPropagation();
                                   router.push(`/scoring?subject=${encodeURIComponent(lecture.subject)}&focus=${a.id}`);
                                 }}
