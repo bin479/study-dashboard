@@ -137,7 +137,7 @@ export default function ScoringView() {
   };
 
   const rows = useMemo(() => {
-    return assignments
+    const validRows = assignments
       .map((a) => {
         const lecture = lectures.find((l) => l.id === a.lectureId);
         if (!lecture) return null;
@@ -153,6 +153,8 @@ export default function ScoringView() {
         return { assignment: a, lecture, breakdown: scoreAssignment(lecture, a) };
       })
       .filter(Boolean) as { assignment: Assignment; lecture: (typeof lectures)[number]; breakdown: ReturnType<typeof scoreAssignment> }[];
+      
+    return validRows.sort((a, b) => a.lecture.date.localeCompare(b.lecture.date) || a.lecture.order - b.lecture.order);
   }, [assignments, lectures, viewingGroupId, isSubjectHead, adminMode, currentMember]);
 
   const scopedMembers = useMemo(
