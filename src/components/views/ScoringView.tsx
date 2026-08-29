@@ -457,7 +457,7 @@ export default function ScoringView() {
                             </p>
                           </div>
                           {(() => {
-                            const canSeeProof = isLead || assignment.proofScorePublished;
+                            const canSeeProof = isLead || assignment.proofScorePublished || adminMode;
                             return (
                               <div>
                                 <p className="text-[10px] font-medium text-slate-400 text-right">검안</p>
@@ -596,7 +596,7 @@ export default function ScoringView() {
                       </div>
 
                       {(() => {
-                        const canSeeProof = isLead || assignment.proofScorePublished;
+                        const canSeeProof = isLead || assignment.proofScorePublished || adminMode;
                         if (!canSeeProof) {
                           return (
                             <div className="flex h-full min-h-[120px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-4 text-center text-slate-400">
