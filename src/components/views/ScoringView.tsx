@@ -447,7 +447,9 @@ export default function ScoringView() {
                   <span>{subject}</span>
                   <span className="rounded-md bg-white px-2 py-0.5 text-xs font-semibold text-slate-500 shadow-sm">{subjectRows.length}건</span>
                 </div>
-                {subjectRows.map(({ assignment, lecture, breakdown }) => (
+                {subjectRows.map(({ assignment, lecture, breakdown }) => {
+                  const canSeeProof = isLead || assignment.proofScorePublished || (adminMode && canUseAdminMode);
+                  return (
                   <div id={`assignment-${assignment.id}`} key={assignment.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div>
@@ -466,17 +468,12 @@ export default function ScoringView() {
                               {Math.round(breakdown.draftTotal * 10) / 10} pt
                             </p>
                           </div>
-                          {(() => {
-                            const canSeeProof = isLead || assignment.proofScorePublished || adminMode;
-                            return (
-                              <div>
-                                <p className="text-[10px] font-medium text-slate-400 text-right">검안</p>
-                                <p className={`text-lg font-bold ${!canSeeProof ? "text-slate-400" : breakdown.proofTotal < 0 ? "text-rose-600" : "text-indigo-700"}`}>
-                                  {canSeeProof ? `${Math.round(breakdown.proofTotal * 10) / 10} pt` : "? pt"}
-                                </p>
-                              </div>
-                            );
-                          })()}
+                          <div>
+                            <p className="text-[10px] font-medium text-slate-400 text-right">검안</p>
+                            <p className={`text-lg font-bold ${!canSeeProof ? "text-slate-400" : breakdown.proofTotal < 0 ? "text-rose-600" : "text-indigo-700"}`}>
+                              {canSeeProof ? `${Math.round(breakdown.proofTotal * 10) / 10} pt` : "? pt"}
+                            </p>
+                          </div>
                         </div>
                         {isLead && lecture.actualDurationMin != null && !assignment.proofScorePublished && (
                           <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
@@ -633,18 +630,26 @@ export default function ScoringView() {
                                 <StatusBadge status={assignment.proofStatus} />
                               </div>
                             </div>
-                            <p className="text-xs text-slate-600">
-                              기본 {breakdown.proofBase} pt{assignment.proofAtDraftLevel && " (초안 수준 적용)"}
-                            </p>
-                            {breakdown.proofPenalty !== 0 && (
-                              <p className="text-xs font-medium text-rose-600">
-                                지연 {breakdown.proofDaysLate}일 · 페널티 {breakdown.proofPenalty} pt
+                            {canSeeProof ? (
+                              <>
+                                <p className="text-xs text-slate-600">
+                                  기본 {breakdown.proofBase} pt{assignment.proofAtDraftLevel && " (초안 수준 적용)"}
+                                </p>
+                                {breakdown.proofPenalty !== 0 && (
+                                  <p className="text-xs font-medium text-rose-600">
+                                    지연 {breakdown.proofDaysLate}일 · 페널티 {breakdown.proofPenalty} pt
+                                  </p>
+                                )}
+                                {assignment.proofAdjustmentReason && (
+                                  <div className="mt-2 rounded border border-slate-200 bg-white p-2">
+                                    <p className="font-mono text-[10px] text-slate-600 whitespace-pre-wrap">{assignment.proofAdjustmentReason}</p>
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <p className="text-xs text-slate-400 mt-2">
+                                그룹장 승인 후 평가가 공개됩니다.
                               </p>
-                            )}
-                            {assignment.proofAdjustmentReason && (
-                              <div className="mt-2 rounded border border-slate-200 bg-white p-2">
-                                <p className="font-mono text-[10px] text-slate-600 whitespace-pre-wrap">{assignment.proofAdjustmentReason}</p>
-                              </div>
                             )}
                             {isLead && (
                               <div className="mt-2 border-t border-slate-200 pt-2 flex items-center justify-between">
@@ -667,7 +672,8 @@ export default function ScoringView() {
                     </div>
 
                   </div>
-                ))}
+                );
+                })}
               </div>
             ));
           })()}
