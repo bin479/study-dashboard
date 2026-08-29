@@ -144,7 +144,7 @@ export default function ScoringView() {
         
         if (isSubjectHead && !adminMode) {
           if (viewingGroupId && findGroupBySubject(STUDY_GROUPS, lecture.subject)?.id !== viewingGroupId) return null;
-          if (!currentMember?.subjects?.includes(lecture.subject)) return null;
+          if (a.proofMemberId !== currentMemberId) return null;
         } else {
           if (viewingGroupId && findGroupBySubject(STUDY_GROUPS, lecture.subject)?.id !== viewingGroupId) return null;
         }
@@ -489,7 +489,7 @@ export default function ScoringView() {
                             초안 · {memberName(members, assignment.draftMemberId)}
                           </p>
                           <div className="flex items-center gap-2">
-                            {(adminMode || ((isLead || isSubjectHead) && assignment.draftMemberId !== currentMemberId && assignment.proofMemberId !== currentMemberId)) && (
+                            {(adminMode || ((isLead || isSubjectHead) && assignment.draftMemberId !== currentMemberId)) && (
                               <button
                                 onClick={() => setEvaluatingDraftId(assignment.id)}
                                 className="rounded bg-white px-2 py-1 text-[10px] font-semibold text-indigo-600 shadow-sm border border-indigo-100 hover:bg-indigo-50"

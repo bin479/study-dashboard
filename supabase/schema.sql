@@ -208,13 +208,19 @@ grant execute on function is_member_claimed(text) to anon, authenticated;
 grant execute on function claim_member(text, text) to anon, authenticated;
 grant execute on function verify_member_pin(text, text) to anon, authenticated;
 
+-- 본인 PIN만 재설정 가능 — claimedByAuthUid가 현재 세션과 일치할 때만 지워진다.
+-- (memberId만 주면 아무나 남의 PIN을 지우고 자기 걸로 재등록할 수 있는 구멍이 있었음)
 create or replace function reset_member_pin(p_member_id text)
-returns void
-language sql
+returns boolean
+language plpgsql
 security definer
 set search_path = public
 as $$
-  delete from member_claims where "memberId" = p_member_id;
+begin
+  delete from member_claims
+  where "memberId" = p_member_id and "claimedByAuthUid" = auth.uid();
+  return found;
+end;
 $$;
 
 grant execute on function reset_member_pin(text) to anon, authenticated;
