@@ -503,11 +503,20 @@ export default function ScheduleView() {
                 <div
                   key={lecture.id}
                   onClick={() => {
-                    if (isNormalUser) return;
+                    const isAdminAllowed = adminMode && canUseAdminMode;
+                    if (isAdminAllowed) {
+                      setSelectedLecture(lecture);
+                      return;
+                    }
+                    if (isNormalUser || currentMemberRole === "subjectHead") return;
+                    if (currentMemberRole === "lead") {
+                      const targetGroup = findGroupBySubject(STUDY_GROUPS, lecture.subject);
+                      if (targetGroup?.id !== currentMember?.groupId) return;
+                    }
                     setSelectedLecture(lecture);
                   }}
                   className={`m-0.5 rounded-lg border p-1.5 transition-all flex flex-col justify-center items-center text-center overflow-hidden
-                    ${!isNormalUser ? "cursor-pointer hover:brightness-95" : "cursor-default"}
+                    ${((adminMode && canUseAdminMode) || (!isNormalUser && currentMemberRole !== "subjectHead" && (currentMemberRole !== "lead" || findGroupBySubject(STUDY_GROUPS, lecture.subject)?.id === currentMember?.groupId))) ? "cursor-pointer hover:brightness-95" : "cursor-default"}
                     ${getLectureColor(lecture, viewingGroupId)}
                     ${isInactive ? "opacity-50" : ""}
                   `}
