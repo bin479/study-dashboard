@@ -11,7 +11,7 @@ interface Props {
   draftMemberName: string;
   proofMemberName: string;
   onClose: () => void;
-  onConfirm: (draftScore: number, proofScore: number, reason: string) => void;
+  onConfirm: (draftScore: number | null, proofScore: number | null, reason: string) => void;
 }
 
 export default function MergeScoreConfirmModal({ assignment, lecture, draftMemberName, proofMemberName, onClose, onConfirm }: Props) {
@@ -104,13 +104,31 @@ export default function MergeScoreConfirmModal({ assignment, lecture, draftMembe
             ))}
           </div>
 
-          <button
-            onClick={() => onConfirm(selectedDraftScore, selectedProofScore, reason)}
-            className="w-full rounded-xl bg-indigo-600 py-3.5 text-sm font-bold text-white transition active:scale-95 hover:bg-indigo-700 flex items-center justify-center gap-2"
-          >
-            <CheckCircle2 size={18} />
-            최종 점수 확정하기
-          </button>
+          {assignment.draftOverrideScore != null ? (
+            <div className="flex gap-2">
+              <button
+                onClick={() => onConfirm(null, null, "")}
+                className="flex-[1] rounded-xl bg-slate-100 py-3.5 text-sm font-bold text-slate-600 transition active:scale-95 hover:bg-slate-200 flex items-center justify-center"
+              >
+                리셋하기
+              </button>
+              <button
+                onClick={() => onConfirm(selectedDraftScore, selectedProofScore, reason)}
+                className="flex-[2] rounded-xl bg-indigo-600 py-3.5 text-sm font-bold text-white transition active:scale-95 hover:bg-indigo-700 flex items-center justify-center gap-2"
+              >
+                <CheckCircle2 size={18} />
+                수정하기
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => onConfirm(selectedDraftScore, selectedProofScore, reason)}
+              className="w-full rounded-xl bg-indigo-600 py-3.5 text-sm font-bold text-white transition active:scale-95 hover:bg-indigo-700 flex items-center justify-center gap-2"
+            >
+              <CheckCircle2 size={18} />
+              최종 점수 확정하기
+            </button>
+          )}
         </div>
       </div>
     </div>
