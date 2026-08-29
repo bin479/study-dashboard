@@ -18,7 +18,7 @@ export default function MergeScoreConfirmModal({ assignment, lecture, draftMembe
   // 병합된 강의(topic이 "A & B")거나, 실제 진행 시간을 입력해둔 강의면
   // 조기종료 등급 옵션을 보여준다 — scheduleActions.ts의 merge_next는 topic만
   // 합치고 subject는 안 건드리므로 subject가 아니라 topic으로 판단해야 한다.
-  const isMerged = !!lecture.topic?.includes(" & ") || lecture.actualDurationMin !== undefined;
+  const isMerged = !!lecture.topic?.includes(" & ") || lecture.actualDurationMin != null;
   const baseDraft = draftBasePoints(lecture.subjectType, lecture.durationHours);
   const baseProof = proofBasePoints(lecture.subjectType, lecture.durationHours, assignment.proofAtDraftLevel);
 
@@ -63,7 +63,7 @@ export default function MergeScoreConfirmModal({ assignment, lecture, draftMembe
             </div>
           </div>
 
-          {lecture.actualDurationMin !== undefined && (
+          {lecture.actualDurationMin != null && (
             <div className="rounded-xl bg-indigo-50 p-3 border border-indigo-100 text-xs text-indigo-800">
               ⏱ 실제 진행 시간 <b>{lecture.actualDurationMin}분</b> (예정 {lecture.durationHours * 60}분) 입력됨
               {suggested ? ` — 아래 "${suggested.reason}"를 자동으로 추천해뒀어요. 확인 후 그대로 확정하거나 다른 등급을 골라주세요.` : " — 정상 진행 범위라 추천 등급은 없어요."}

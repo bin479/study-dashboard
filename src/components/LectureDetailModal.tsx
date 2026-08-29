@@ -87,7 +87,7 @@ export default function LectureDetailModal({
   const group = findGroupBySubject(STUDY_GROUPS, lecture.subject);
 
   const [actualDurationInput, setActualDurationInput] = useState(
-    lecture.actualDurationMin !== undefined ? String(lecture.actualDurationMin) : ""
+    lecture.actualDurationMin != null ? String(lecture.actualDurationMin) : ""
   );
 
   const [editing, setEditing] = useState(false);

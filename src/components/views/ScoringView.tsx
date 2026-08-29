@@ -466,7 +466,7 @@ export default function ScoringView() {
                         </div>
                         {isLead && (
                           <div className="flex flex-col items-end gap-1">
-                            {lecture.actualDurationMin !== undefined && !assignment.scorePublished && (
+                            {lecture.actualDurationMin != null && !assignment.scorePublished && (
                               <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
                                 ⏱ 실제 {lecture.actualDurationMin}분 · 확인 필요
                               </span>
