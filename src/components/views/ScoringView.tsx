@@ -141,6 +141,7 @@ export default function ScoringView() {
       .map((a) => {
         const lecture = lectures.find((l) => l.id === a.lectureId);
         if (!lecture) return null;
+        if (lecture.status === "cancelled" || lecture.status === "shifted" || lecture.status === "unassigned") return null;
         
         if (isSubjectHead && !adminMode) {
           if (viewingGroupId && findGroupBySubject(STUDY_GROUPS, lecture.subject)?.id !== viewingGroupId) return null;
