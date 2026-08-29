@@ -36,6 +36,7 @@ async function syncLecturesToSupabase(incoming) {
     endTime: l.endTime ?? null,
     sessionNumber: l.sessionNumber ?? null,
     status: l.shifted ? "shifted" : "scheduled",
+    note: l.note ?? null,
   }));
 
   const assignmentRows = incoming

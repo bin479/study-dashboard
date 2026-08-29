@@ -11,6 +11,11 @@ const LINKS = [
   { href: "/sync", label: "Google Sheets 동기화", description: "시간표·명단·과제 큐 연동", icon: RefreshCw },
 ];
 
+const ADMIN_LINKS = [
+  ...LINKS,
+  { href: "/feedbacks", label: "사용자 피드백 (개발자용)", description: "앱 내 의견/오류 신고 내역", icon: Users } // reusing icon or better icon
+];
+
 export default function MoreView() {
   const currentMemberId = useDashboardStore((s) => s.currentMemberId);
   const members = useDashboardStore((s) => s.members);
@@ -22,14 +27,17 @@ export default function MoreView() {
   const canUseAdminMode = currentMemberName === "한상희" || currentMemberName === "성민수";
 
   const availableLinks = useMemo(() => {
-    if (adminMode && canUseAdminMode) return LINKS;
+    if (adminMode && canUseAdminMode) {
+      if (currentMemberName === "성민수") return ADMIN_LINKS;
+      return LINKS;
+    }
     
     if (currentMemberRole === "lead") {
       return LINKS.filter(item => item.href === "/settlement");
     }
     
     return [];
-  }, [adminMode, canUseAdminMode, currentMemberRole]);
+  }, [adminMode, canUseAdminMode, currentMemberRole, currentMemberName]);
 
   return (
     <div className="space-y-6">

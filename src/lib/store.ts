@@ -559,11 +559,12 @@ export const useDashboardStore = create<DashboardState>()(
             const currentMember = state.members.find(m => m.id === state.currentMemberId);
             const draftMember = state.members.find(m => m.id === a.draftMemberId);
             if (currentMember && currentMember.groupId) {
+              const roleName = currentMember.role === "lead" ? "그룹장" : "과목부장";
               const newLog: ActivityLogEntry = {
                 id: uid("log"),
                 timestamp: new Date().toISOString(),
                 type: "evaluation",
-                summary: `${currentMember.name} 과목부장이 ${draftMember?.name || "알 수 없음"}님의 초안을 평가했습니다.`,
+                summary: `${currentMember.name} ${roleName}이 ${draftMember?.name || "알 수 없음"}님의 초안을 평가했습니다.`,
                 status: "success",
                 groupId: currentMember.groupId
               };
@@ -592,11 +593,12 @@ export const useDashboardStore = create<DashboardState>()(
             const currentMember = state.members.find(m => m.id === state.currentMemberId);
             const proofMember = state.members.find(m => m.id === a.proofMemberId);
             if (currentMember && currentMember.groupId) {
+              const roleName = currentMember.role === "lead" ? "그룹장" : "과목부장";
               const newLog: ActivityLogEntry = {
                 id: uid("log"),
                 timestamp: new Date().toISOString(),
                 type: "evaluation",
-                summary: `${currentMember.name} 과목부장이 ${proofMember?.name || "알 수 없음"}님의 검안을 평가했습니다.`,
+                summary: `${currentMember.name} ${roleName}이 ${proofMember?.name || "알 수 없음"}님의 검안을 평가했습니다.`,
                 status: "success",
                 groupId: currentMember.groupId
               };

@@ -271,25 +271,32 @@ function parseTimetableSheet(sheet, splitTitles, mergeTitles) {
 
   records.sort((a, b) => (a.date === b.date ? a.order - b.order : a.date < b.date ? -1 : 1));
 
-  // <설정> R열에 지정된 "학습부 통합" 강의는 바로 앞 강의와 한 학습부로 합쳐진다 —
-  // prev 쪽에 시간만 더하고, 이 레코드 자체는 결과 목록에서 뺀다(그대로 두면
-  // 화면에 병합된 큰 칸과 별도의 작은 칸이 겹쳐 보인다).
+  // <설정> R열에 지정된 "학습부 통합" 강의는 바로 앞 강의와 한 학습부로 합쳐진다.
+  // 앱 안의 수동 "합치기"(merge_next, scheduleActions.ts) 기능과 같은 모양을
+  // 내야 한다: 흡수되는 강의는 지우지 않고 status "shifted" + note를 달아
+  // 그대로 남기고(화면에 흐리게/SHIFTED 배지로 표시됨, 배정은 "미배정" 처리),
+  // 앞 강의 쪽엔 시간을 더하고 제목을 "A & B"로 합친다(과목명은 안 건드림 —
+  // scheduleActions.ts의 merge_next도 topic만 합치지 subject는 그대로 둔다).
   const mergedRecords = [];
   for (let i = 0; i < records.length; i++) {
     const r = records[i];
     if (mergeTitles.has(r.raw) && mergedRecords.length > 0) {
       let prevIndex = mergedRecords.length - 1;
-      while (prevIndex >= 0 && (mergedRecords[prevIndex].date !== r.date || !mergedRecords[prevIndex].assignable)) {
+      while (prevIndex >= 0 && (mergedRecords[prevIndex].date !== r.date || mergedRecords[prevIndex].shifted)) {
         prevIndex--;
       }
       if (prevIndex >= 0) {
         const prev = mergedRecords[prevIndex];
-        if (prev.subject !== r.subject) prev.subject = `${prev.subject} & ${r.subject}`;
+        const prevTopic = prev.topic && prev.topic !== prev.subject ? prev.topic : prev.subject;
+        const curTopic = r.topic && r.topic !== r.subject ? r.topic : r.subject;
+        if (!prevTopic.includes(curTopic)) prev.topic = `${prevTopic} & ${curTopic}`;
         prev.durationHours += r.durationHours;
         prev.endTime = r.endTime;
         const lastOrder = r.order + r.durationHours - 1;
         prev.period = lastOrder === prev.order ? `${prev.order}교시` : `${prev.order}~${lastOrder}교시`;
-        continue;
+
+        r.shifted = true;
+        r.note = `${prev.period}로 병합됨`;
       }
     }
     mergedRecords.push(r);
@@ -406,7 +413,9 @@ function parseWorkbook(buffer) {
   // 같은 키의 pairs 배열을 등장 순서대로 하나씩 소비한다.
   const cursor = new Map();
   lectures.forEach((r) => {
-    if (!r.assignable) {
+    // 흡수된(shifted) 강의는 원래 자기 팀이 있었더라도 병합된 강의 쪽으로
+    // 흡수됐다고 보고 "미배정" 처리한다 — scheduleActions.ts의 merge_next와 동일.
+    if (!r.assignable || r.shifted) {
       r.draftName = null;
       r.proofName = null;
       return;
@@ -441,6 +450,8 @@ function buildPayload(records) {
     sessionNumber: r.sessionNumber || null,
     draftName: r.draftName ?? null,
     proofName: r.proofName ?? null,
+    shifted: !!r.shifted,
+    note: r.note ?? null,
   }));
 }
 

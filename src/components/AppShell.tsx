@@ -14,7 +14,7 @@ import {
   Calculator,
   MoreHorizontal,
 } from "lucide-react";
-import { ReactNode, useMemo, useEffect } from "react";
+import { ReactNode, useMemo, useEffect, useState } from "react";
 import { useDashboardStore } from "@/lib/store";
 
 const DESKTOP_NAV_ITEMS = [
@@ -48,12 +48,15 @@ const DateSimulator = dynamic(() => import("./DateSimulator"), {
 });
 const CurrentUserBadge = dynamic(() => import("./CurrentUserBadge"), { ssr: false });
 const AppGate = dynamic(() => import("./AppGate"), { ssr: false });
+const FeedbackModal = dynamic(() => import("./FeedbackModal"), { ssr: false });
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const currentMemberId = useDashboardStore((s) => s.currentMemberId);
   const members = useDashboardStore((s) => s.members);
   const adminMode = useDashboardStore((s) => s.adminMode);
+
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
   const currentMember = useMemo(() => members.find((m) => m.id === currentMemberId), [members, currentMemberId]);
   const currentMemberRole = currentMember?.role;
@@ -169,6 +172,22 @@ export default function AppShell({ children }: { children: ReactNode }) {
             })}
           </div>
         </nav>
+      )}
+
+      {currentMemberId && (
+        <>
+          <button
+            onClick={() => setShowFeedbackModal(true)}
+            className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg transition-transform hover:scale-110 hover:bg-indigo-700 active:scale-95 md:bottom-8 md:right-8"
+            aria-label="피드백 보내기"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/><path d="M12 15h.01"/><path d="M12 12V8"/></svg>
+          </button>
+          
+          {showFeedbackModal && (
+            <FeedbackModal onClose={() => setShowFeedbackModal(false)} />
+          )}
+        </>
       )}
     </div>
   );
