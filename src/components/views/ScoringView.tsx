@@ -558,26 +558,23 @@ export default function ScoringView() {
                         {isLead && (
                           <>
                             <div className="mt-2 border-t border-slate-200 pt-2 flex flex-col gap-2">
-                              <div className="flex items-center justify-between">
-                                <p className="text-[11px] font-medium text-slate-400">총점 강제 확정 (수동 입력)</p>
-                                <input
-                                  type="number"
-                                  step={0.5}
-                                  placeholder="점수"
-                                  value={assignment.draftOverrideScore ?? ""}
-                                  onChange={(e) => {
-                                    const val = e.target.value;
-                                    setDraftOverrideScore(assignment.id, val === "" ? null : Number(val));
-                                  }}
-                                  className="w-16 rounded-lg border border-slate-200 px-2 py-1 text-xs text-right font-semibold text-indigo-700 placeholder:font-normal"
-                                />
-                              </div>
-                              <button
-                                onClick={() => setConfirmingAssignment(assignment)}
-                                className="w-full rounded-lg bg-indigo-50 border border-indigo-200 px-2.5 py-1.5 text-xs font-bold text-indigo-700 active:scale-95 transition-all hover:bg-indigo-100"
-                              >
-                                체크리스트로 채점하기
-                              </button>
+                              <p className="text-[11px] font-medium text-slate-400">기본 점수 확정</p>
+                              {assignment.draftOverrideScore != null ? (
+                                <button
+                                  onClick={() => setConfirmingAssignment(assignment)}
+                                  className="w-full flex items-center justify-between rounded-lg bg-indigo-50 border border-indigo-200 px-3 py-2 text-xs font-bold text-indigo-700 active:scale-95 transition-all hover:bg-indigo-100"
+                                >
+                                  <span>확정됨</span>
+                                  <span>초안 +{assignment.draftOverrideScore} / 검안 +{assignment.proofOverrideScore ?? "?"}</span>
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => setConfirmingAssignment(assignment)}
+                                  className="w-full rounded-lg bg-white border border-indigo-200 px-2.5 py-2 text-xs font-bold text-indigo-600 shadow-sm active:scale-95 transition-all hover:bg-indigo-50"
+                                >
+                                  기본 점수 확정하기
+                                </button>
+                              )}
                             </div>
                             <div className="mt-2 border-t border-slate-200 pt-2 flex items-center justify-between">
                               <p className="text-[11px] font-medium text-slate-400">초안자에게 채점 내역 공개</p>

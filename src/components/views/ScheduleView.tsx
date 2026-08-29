@@ -18,7 +18,7 @@ import { GROUP_DRAFT_SEQUENCES } from "@/lib/sequences";
 import { getDefaultTier } from "@/lib/scoring";
 import { formatDayLabel, formatShortDate, isoDateFromToday, mondayOf, parseISODate } from "@/lib/dates";
 import SchedulePreviewModal from "../SchedulePreviewModal";
-import LectureDetailModal from "../LectureDetailModal";
+import MergeScoreConfirmModal from "../MergeScoreConfirmModal";
 import WallpaperModal from "../WallpaperModal";
 import D1NoticeCard from "../D1NoticeCard";
 import { Download, RefreshCw, ExternalLink } from "lucide-react";
@@ -637,22 +637,29 @@ export default function ScheduleView() {
         </div>
       </div>
 
-      {selectedLecture && (
-        <LectureDetailModal
-          lecture={selectedLecture}
-          assignments={assignments.filter((a) => a.lectureId === selectedLecture.id)}
-          members={members}
-          onClose={() => setSelectedLecture(null)}
-          onAction={(action) => setPending({ lectureId: selectedLecture.id, action })}
-          onUpdateLecture={(info) => updateLectureInfo(selectedLecture.id, info)}
-          onSetDraftMember={setDraftMember}
-          onSetProofMember={setProofMember}
-          onSetActualDuration={(minutes) => {
-            setActualDuration(selectedLecture.id, minutes);
-            setSelectedLecture(null);
-          }}
-        />
-      )}
+      {selectedLecture && (() => {
+        const assignment = assignments.find(a => a.lectureId === selectedLecture.id);
+        const draftMemberName = members.find(m => m.id === assignment?.draftMemberId)?.name ?? "미배정";
+        const proofMemberName = members.find(m => m.id === assignment?.proofMemberId)?.name ?? "미배정";
+        
+        return (
+          <MergeScoreConfirmModal
+            assignment={assignment || {} as any}
+            lecture={selectedLecture}
+            draftMemberName={draftMemberName}
+            proofMemberName={proofMemberName}
+            onClose={() => setSelectedLecture(null)}
+            onConfirm={(draft, proof, reason) => {
+              if (assignment) {
+                useDashboardStore.getState().setOverrideScores(assignment.id, draft, proof);
+              } else {
+                alert("아직 학습부가 배정되지 않은 강의입니다.");
+              }
+              setSelectedLecture(null);
+            }}
+          />
+        );
+      })()}
 
       {pending && preview && (
         <SchedulePreviewModal

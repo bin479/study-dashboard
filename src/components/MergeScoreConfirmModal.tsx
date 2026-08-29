@@ -34,7 +34,7 @@ export default function MergeScoreConfirmModal({ assignment, lecture, draftMembe
       <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl animate-in zoom-in-95 fade-in duration-200">
         <div className="border-b border-slate-100 px-5 py-4 flex justify-between items-center bg-indigo-50/50">
           <div>
-            <h2 className="text-base font-bold text-slate-800">점수 수동 확정 (그룹장)</h2>
+            <h2 className="text-base font-bold text-slate-800">기본 점수 확정</h2>
             <p className="text-xs text-slate-500 mt-0.5">{lecture.subject}</p>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition">
