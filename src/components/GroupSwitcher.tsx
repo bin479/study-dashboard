@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { useDashboardStore } from "@/lib/store";
 import { STUDY_GROUPS } from "@/lib/studyGroups";
 
 export default function GroupSwitcher() {
+  const pathname = usePathname();
   const viewingGroupId = useDashboardStore((s) => s.viewingGroupId);
   const setViewingGroupId = useDashboardStore((s) => s.setViewingGroupId);
   const currentMemberId = useDashboardStore((s) => s.currentMemberId);
@@ -13,7 +15,7 @@ export default function GroupSwitcher() {
   const mem = members.find((m) => m.id === currentMemberId);
   const currentMemberRole = mem?.role;
   const isJeonghoo = mem?.name === "김정후";
-  const isNormalUser = currentMemberRole !== "lead" && currentMemberRole !== "subjectHead" && !isJeonghoo;
+  const isNormalUser = currentMemberRole !== "lead" && currentMemberRole !== "subjectHead" && !(isJeonghoo && pathname === "/settlement");
   const adminMode = useDashboardStore((s) => s.adminMode);
 
   useEffect(() => {

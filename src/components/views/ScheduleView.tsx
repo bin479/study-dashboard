@@ -125,6 +125,7 @@ export default function ScheduleView() {
   const currentMember = members.find((m) => m.id === currentMemberId);
   const currentMemberRole = currentMember?.role;
   const currentMemberName = currentMember?.name;
+  const isJeonghoo = currentMemberName === "김정후";
   const isNormalUser = currentMemberRole !== "lead" && currentMemberRole !== "subjectHead";
 
   const ADMIN_ALLOWED_NAMES = ["한상희", "성민수"];
@@ -543,8 +544,9 @@ export default function ScheduleView() {
                             return (
                               <div 
                                 key={idx} 
-                                className="flex flex-col items-center mt-1 pt-1 border-t border-black/5 hover:bg-black/5 rounded cursor-pointer transition-colors"
+                                className={`flex flex-col items-center mt-1 pt-1 border-t border-black/5 rounded transition-colors ${!isJeonghoo ? "hover:bg-black/5 cursor-pointer" : ""}`}
                                 onClick={(e) => {
+                                  if (isJeonghoo) return;
                                   e.stopPropagation();
                                   router.push(`/scoring?subject=${encodeURIComponent(lecture.subject)}&focus=${a.id}`);
                                 }}
