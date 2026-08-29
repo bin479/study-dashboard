@@ -14,6 +14,8 @@ import { applyScheduleAction, ScheduleActionType } from "@/lib/scheduleActions";
 import { Lecture, Member } from "@/lib/types";
 import { findGroupBySubject, findSubjectHeads, findGroupLeader } from "@/lib/roles";
 import { STUDY_GROUPS } from "@/lib/studyGroups";
+import { GROUP_DRAFT_SEQUENCES } from "@/lib/sequences";
+import { getDefaultTier } from "@/lib/scoring";
 import { formatDayLabel, formatShortDate, isoDateFromToday, mondayOf, parseISODate } from "@/lib/dates";
 import SchedulePreviewModal from "../SchedulePreviewModal";
 import LectureDetailModal from "../LectureDetailModal";
@@ -260,6 +262,33 @@ export default function ScheduleView() {
     return map;
   }, [lectures]);
 
+  const assignmentErrors = useMemo(() => {
+    const errors: { lecture: Lecture; type: "초안" | "검안"; memberName: string; expectedGroup: string }[] = [];
+    lectures.forEach((l) => {
+      if (!l.assignable || l.status === "shifted" || l.status === "cancelled") return;
+      const asg = assignments.find((a) => a.lectureId === l.id);
+      if (!asg) return;
+      const group = findGroupBySubject(STUDY_GROUPS, l.subject);
+      if (!group) return;
+
+      const draftName = members.find((m) => m.id === asg.draftMemberId)?.name;
+      if (draftName && !GROUP_DRAFT_SEQUENCES[group.id]?.includes(draftName)) {
+        errors.push({ lecture: l, type: "초안", memberName: draftName, expectedGroup: group.name });
+      }
+
+      const proofName = members.find((m) => m.id === asg.proofMemberId)?.name;
+      const validProofMembers = findSubjectHeads(members, l.subject);
+      const gl = findGroupLeader(members, STUDY_GROUPS, l.subject);
+      if (gl) validProofMembers.push(gl);
+
+      const validProofNames = validProofMembers.map((m) => m.name);
+      if (proofName && !validProofNames.includes(proofName)) {
+        errors.push({ lecture: l, type: "검안", memberName: proofName, expectedGroup: group.name });
+      }
+    });
+    return errors.sort((a, b) => a.lecture.date.localeCompare(b.lecture.date) || a.lecture.order - b.lecture.order);
+  }, [lectures, assignments, members]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
@@ -296,6 +325,46 @@ export default function ScheduleView() {
           </button>
         </div>
       </div>
+
+      {assignmentErrors.length > 0 && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm font-semibold text-rose-800">
+              ⚠️ 배정 오류 발견 ({assignmentErrors.length}건)
+            </h2>
+            <span className="text-xs text-rose-600">명단 불일치</span>
+          </div>
+          <p className="mb-3 text-xs text-rose-700">
+            구글 시트에 수동 배정된 인원 중 다음 강의들에 대해 오류가 있습니다. 해당 인원은 과목을 전담하는 학습부의 명단에 존재하지 않습니다.
+          </p>
+          <div className="max-h-48 overflow-y-auto rounded-lg border border-rose-100 bg-white p-2 text-xs">
+            {assignmentErrors.map((err, i) => (
+              <button
+                key={i}
+                onClick={() => {
+                  const targetWeek = weeks.findIndex(w => w.days.some(d => d[0] === err.lecture.date));
+                  if (targetWeek >= 0) {
+                    setWeekIndex(targetWeek);
+                    setTimeout(() => {
+                      const el = document.getElementById(`lecture-${err.lecture.id}`);
+                      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+                    }, 100);
+                  }
+                }}
+                className="flex w-full items-center justify-between rounded p-2 hover:bg-rose-50 text-left transition-colors"
+              >
+                <div className="flex gap-2">
+                  <span className="font-semibold text-slate-700">{shortDate(err.lecture.date)} {err.lecture.period}</span>
+                  <span className="text-slate-600">{err.lecture.subject}</span>
+                </div>
+                <div className="text-rose-600 font-medium">
+                  {err.type}자 오류: {err.memberName} ({err.expectedGroup} 명단에 없음)
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {toConfirmMerge.length > 0 && (
         <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 shadow-sm">
@@ -591,9 +660,19 @@ export default function ScheduleView() {
                             const d = members.find(m => m.id === a.draftMemberId)?.name ?? "미배정";
                             const p = members.find(m => m.id === a.proofMemberId)?.name ?? "미배정";
                             const num = lectureNumberMap.get(lId);
+                            const tier = getDefaultTier(lecture.subjectType, lecture.durationHours);
                             return (
-                              <div key={idx}>
-                                {num ? <span className="font-bold text-indigo-700">[{num}번] </span> : ""}초:{d} / 검:{p}
+                              <div key={idx} className="flex flex-col items-center">
+                                <div>
+                                  {num ? <span className="font-bold text-indigo-700">[{num}번] </span> : ""}초:{d} / 검:{p}
+                                </div>
+                                {viewingGroupId && (
+                                  <div className="text-[8.5px] text-indigo-700 font-bold opacity-90 mt-0.5 tracking-tighter">
+                                    {a.draftOverrideScore != null
+                                      ? `[확정: 초안 +${a.draftOverrideScore} / 검안 +${a.proofOverrideScore ?? tier.proof}]`
+                                      : `[예상: 초안 +${tier.draft} / 검안 +${tier.proof}]`}
+                                  </div>
+                                )}
                               </div>
                             );
                           });

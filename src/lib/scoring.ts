@@ -51,29 +51,49 @@ export function proofBasePoints(
   return SCORING_RULES.proofFlat[subjectType];
 }
 
-/** 실제 진행 시간이 짧을 때(조기종료) MergeScoreConfirmModal에서 고르는 점수 등급표 —
- * 그룹장이 최종 확인하기 전에 기본으로 골라줄 등급을 정하는 데 쓴다. */
-export const DURATION_TIERS = [
-  { minRatio: 0.6, draft: 8, proof: 5, reason: "조기종료 - 밀도 유사" },
-  { minRatio: 0.4, draft: 6, proof: 3, reason: "조기종료 - 신규/양 적음" },
-  { minRatio: 0.2, draft: 4, proof: 2.5, reason: "조기종료 - 간단 수정" },
-  { minRatio: 0, draft: 2, proof: 1, reason: "조기종료 - 기출만 추가" },
+/** 
+ * 체크리스트 기반 점수 산정 룰 (2시간 메이저 조기 종료)
+ */
+export const CHECKLIST_TIERS_2HR_MAJOR = [
+  { id: "2hr_major_normal", draft: 8, proof: 5, reason: "밀도 정상(8점)" },
+  { id: "2hr_major_new_short", draft: 6, proof: 3, reason: "신규 작성 & 적은 양(6점)" },
+  { id: "2hr_major_simple", draft: 4, proof: 2.5, reason: "단순 수정(4점)" },
+  { id: "2hr_major_past", draft: 2, proof: 1, reason: "기출 추가(2점)" },
+] as const;
+
+/** 
+ * 체크리스트 기반 점수 산정 룰 (1시간 수업)
+ */
+export const CHECKLIST_TIERS_1HR = [
+  { id: "1hr_normal", draft: 4, proof: 2.5, reason: "일반/단순 분량" },
+  { id: "1hr_high_density", draft: 6, proof: 3, reason: "풀타임 고밀도" },
 ] as const;
 
 /**
- * 예정 시간 대비 실제 진행 시간이 짧으면(50% 미만) 등급표에서 기본값을 골라 반환한다.
- * 정상 진행(50% 이상)이면 null — MergeScoreConfirmModal은 이때 "정상 진행" 기본점수를 쓴다.
+ * 체크리스트 기반 점수 산정 룰 (2시간 마이너 수업)
  */
-export function suggestDurationTier(
-  scheduledDurationHours: number,
-  actualDurationMin: number
-): { draft: number; proof: number; reason: string } | null {
-  const scheduledMin = scheduledDurationHours * 60;
-  if (scheduledMin <= 0) return null;
-  const ratio = actualDurationMin / scheduledMin;
-  if (ratio >= 0.5) return null;
-  const tier = DURATION_TIERS.find((t) => ratio >= t.minRatio) ?? DURATION_TIERS[DURATION_TIERS.length - 1];
-  return { draft: tier.draft, proof: tier.proof, reason: tier.reason };
+export const CHECKLIST_TIERS_2HR_MINOR = [
+  { id: "2hr_minor_normal", draft: 4, proof: 2.5, reason: "마이너 기본" },
+] as const;
+
+/**
+ * 수업의 타입(메이저/마이너)과 배정 시간(1시간/2시간)을 기반으로 해당 수업에 적용될 수 있는 티어 목록을 반환합니다.
+ */
+export function getAvailableTiers(subjectType: SubjectType, durationHours: number) {
+  if (durationHours === 1) return CHECKLIST_TIERS_1HR;
+  if (subjectType === "minor") return CHECKLIST_TIERS_2HR_MINOR;
+  return CHECKLIST_TIERS_2HR_MAJOR;
+}
+
+/**
+ * 수업의 타입과 배정 시간을 기반으로 "기본적으로 선택될(예상되는)" 디폴트 티어를 반환합니다.
+ * - 2시간 메이저: 밀도 정상
+ * - 1시간: 일반/단순 분량
+ * - 2시간 마이너: 마이너 기본
+ */
+export function getDefaultTier(subjectType: SubjectType, durationHours: number) {
+  const tiers = getAvailableTiers(subjectType, durationHours);
+  return tiers[0];
 }
 
 /** Draft deadline: lecture date, next day 09:00 local. */
@@ -159,7 +179,9 @@ export function scoreAssignment(lecture: Lecture, assignment: Assignment): Assig
   const draftTotal = assignment.draftOverrideScore != null
     ? assignment.draftOverrideScore
     : draftBase + draftPenalty + draftAdjustment + extraBonusesDraftTotal;
-  const proofTotal = proofBase + proofPenalty + proofAdjustment + bonus + extraBonusesProofTotal;
+  const proofTotal = assignment.proofOverrideScore != null
+    ? assignment.proofOverrideScore
+    : proofBase + proofPenalty + proofAdjustment + bonus + extraBonusesProofTotal;
   const total = draftTotal + proofTotal;
 
   return {

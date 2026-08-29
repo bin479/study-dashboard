@@ -185,6 +185,7 @@ interface DashboardState {
   setDraftMember: (assignmentId: string, memberId: string | null) => void;
   setProofMember: (assignmentId: string, memberId: string | null) => void;
   setDraftOverrideScore: (assignmentId: string, score: number | null) => void;
+  setOverrideScores: (assignmentId: string, draftScore: number | null, proofScore: number | null) => void;
   toggleDraftScorePublished: (assignmentId: string) => void;
   toggleProofScorePublished: (assignmentId: string) => void;
   addExtraBonus: (assignmentId: string, type: "draft" | "proof", amount: number, reason: string) => void;
@@ -661,6 +662,14 @@ export const useDashboardStore = create<DashboardState>()(
           ),
         }));
         syncRow("assignments", { id: assignmentId, draftOverrideScore: score });
+      },
+      setOverrideScores: (assignmentId, draftScore, proofScore) => {
+        set((state) => ({
+          assignments: state.assignments.map((a) =>
+            a.id === assignmentId ? { ...a, draftOverrideScore: draftScore, proofOverrideScore: proofScore } : a
+          ),
+        }));
+        syncRow("assignments", { id: assignmentId, draftOverrideScore: draftScore, proofOverrideScore: proofScore });
       },
 
       toggleDraftScorePublished: (assignmentId) => {

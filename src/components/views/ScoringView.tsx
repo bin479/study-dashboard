@@ -12,6 +12,7 @@ import { GROUP_DRAFT_SEQUENCES } from "@/lib/sequences";
 import StatusBadge from "../StatusBadge";
 import DraftEvaluationModal from "../DraftEvaluationModal";
 import ProofEvaluationModal from "../ProofEvaluationModal";
+import MergeScoreConfirmModal from "../MergeScoreConfirmModal";
 
 const BONUS_OPTIONS = Array.from(
   { length: (SCORING_RULES.bonusMax - SCORING_RULES.bonusMin) / SCORING_RULES.bonusStep + 1 },
@@ -53,7 +54,6 @@ export default function ScoringView() {
   const searchParams = useSearchParams();
 
   const [tab, setTab] = useState<"leaderboard" | "detail">(() => {
-    // 그룹장이나 과목부장일 경우 기본 탭을 상세 내역으로
     const currentMember = members.find(m => m.id === currentMemberId);
     if (currentMember && (currentMember.role === "lead" || currentMember.role === "subjectHead")) {
       return "detail";
@@ -64,6 +64,7 @@ export default function ScoringView() {
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [evaluatingDraftId, setEvaluatingDraftId] = useState<string | null>(null);
   const [evaluatingProofId, setEvaluatingProofId] = useState<string | null>(null);
+  const [confirmingAssignment, setConfirmingAssignment] = useState<Assignment | null>(null);
 
   const setViewingGroupId = useDashboardStore((s) => s.setViewingGroupId);
   const simulatedToday = useDashboardStore((s) => s.simulatedToday);
@@ -553,19 +554,27 @@ export default function ScoringView() {
 
                         {isLead && (
                           <>
-                            <div className="mt-2 border-t border-slate-200 pt-2 flex items-center justify-between">
-                              <p className="text-[11px] font-medium text-slate-400">총점 강제 확정 (Override)</p>
-                              <input
-                                type="number"
-                                step={0.5}
-                                placeholder="점수"
-                                value={assignment.draftOverrideScore ?? ""}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  setDraftOverrideScore(assignment.id, val === "" ? null : Number(val));
-                                }}
-                                className="w-16 rounded-lg border border-slate-200 px-2 py-1 text-xs text-right font-semibold text-indigo-700 placeholder:font-normal"
-                              />
+                            <div className="mt-2 border-t border-slate-200 pt-2 flex flex-col gap-2">
+                              <div className="flex items-center justify-between">
+                                <p className="text-[11px] font-medium text-slate-400">총점 강제 확정 (수동 입력)</p>
+                                <input
+                                  type="number"
+                                  step={0.5}
+                                  placeholder="점수"
+                                  value={assignment.draftOverrideScore ?? ""}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setDraftOverrideScore(assignment.id, val === "" ? null : Number(val));
+                                  }}
+                                  className="w-16 rounded-lg border border-slate-200 px-2 py-1 text-xs text-right font-semibold text-indigo-700 placeholder:font-normal"
+                                />
+                              </div>
+                              <button
+                                onClick={() => setConfirmingAssignment(assignment)}
+                                className="w-full rounded-lg bg-indigo-50 border border-indigo-200 px-2.5 py-1.5 text-xs font-bold text-indigo-700 active:scale-95 transition-all hover:bg-indigo-100"
+                              >
+                                체크리스트로 채점하기
+                              </button>
                             </div>
                             <div className="mt-2 border-t border-slate-200 pt-2 flex items-center justify-between">
                               <p className="text-[11px] font-medium text-slate-400">초안자에게 채점 내역 공개</p>
@@ -683,6 +692,19 @@ export default function ScoringView() {
           />
         );
       })()}
+      {confirmingAssignment && (
+        <MergeScoreConfirmModal
+          assignment={confirmingAssignment}
+          lecture={lectures.find(l => l.id === confirmingAssignment.lectureId)!}
+          draftMemberName={members.find(m => m.id === confirmingAssignment.draftMemberId)?.name ?? "미배정"}
+          proofMemberName={members.find(m => m.id === confirmingAssignment.proofMemberId)?.name ?? "미배정"}
+          onClose={() => setConfirmingAssignment(null)}
+          onConfirm={(draft, proof, reason) => {
+            useDashboardStore.getState().setOverrideScores(confirmingAssignment.id, draft, proof);
+            setConfirmingAssignment(null);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -91,7 +91,8 @@ export interface Assignment {
   proofAtDraftLevel: boolean; // 검안자가 초안 쓴 수준이면 초안 스코어링 적용
   extraBonusesDraft?: ExtraBonus[];
   extraBonusesProof?: ExtraBonus[];
-  draftOverrideScore?: number | null; // 그룹장이 수동으로 입력한 최종 확정 점수
+  draftOverrideScore?: number | null; // 그룹장이 수동으로 입력한 초안 확정 점수
+  proofOverrideScore?: number | null; // 그룹장이 수동으로 입력한 검안 확정 점수
   draftScorePublished?: boolean; // 그룹장이 초안 채점 내역을 초안자에게 공개했는지
   proofScorePublished?: boolean; // 그룹장이 검안 채점 내역을 검안자에게 공개했는지
 }
