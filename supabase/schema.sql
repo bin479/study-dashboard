@@ -208,18 +208,25 @@ grant execute on function is_member_claimed(text) to anon, authenticated;
 grant execute on function claim_member(text, text) to anon, authenticated;
 grant execute on function verify_member_pin(text, text) to anon, authenticated;
 
--- 본인 PIN만 재설정 가능 — claimedByAuthUid가 현재 세션과 일치할 때만 지워진다.
+-- 본인 PIN만 재설정 가능 — 이미 다른 세션(auth.uid)이 소유 중일 때만 거부한다.
 -- (memberId만 주면 아무나 남의 PIN을 지우고 자기 걸로 재등록할 수 있는 구멍이 있었음)
+-- 아직 아무도 claim한 적 없는 멤버(행이 없거나 claimedByAuthUid가 null)는
+-- "지울 게 없어서 실패"가 아니라 그냥 통과시켜야 그 뒤 claim_member가 정상 등록된다.
 create or replace function reset_member_pin(p_member_id text)
 returns boolean
 language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  owner uuid;
 begin
-  delete from member_claims
-  where "memberId" = p_member_id and "claimedByAuthUid" = auth.uid();
-  return found;
+  select "claimedByAuthUid" into owner from member_claims where "memberId" = p_member_id;
+  if owner is not null and owner <> auth.uid() then
+    return false; -- 다른 사람이 이미 소유 중 — 거부
+  end if;
+  delete from member_claims where "memberId" = p_member_id;
+  return true;
 end;
 $$;
 

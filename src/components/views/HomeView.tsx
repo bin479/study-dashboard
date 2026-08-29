@@ -82,7 +82,9 @@ export default function HomeView() {
   const isLead = currentMemberRole === "lead";
   const isNormalUser = !isSubjectHead && !isLead;
 
-  const [reportModalData, setReportModalData] = useState<{ assignment: any, type: "draft" | "proof", lecture: any }   const myTasks = useMemo(() => {
+  const [reportModalData, setReportModalData] = useState<{ assignment: any, type: "draft" | "proof", lecture: any } | null>(null);
+
+  const myTasks = useMemo(() => {
     if (!currentMemberId) return [];
 
     let drafts = assignments.filter(a => a.draftMemberId === currentMemberId && (a.draftStatus === "pending" || a.draftStatus === "shifted"));
@@ -232,15 +234,6 @@ export default function HomeView() {
               }
 
               return null;
-            })}
-          </div>
-        </div>
-      )}요 (병합됨)</span>
-                    {lec ? `${lec.date} ${lec.subject}` : "강의 정보 없음"}
-                  </p>
-                  <ExternalLink size={14} className="text-indigo-400 group-hover:text-indigo-600" />
-                </Link>
-              );
             })}
           </div>
         </div>
