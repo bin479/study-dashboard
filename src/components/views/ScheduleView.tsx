@@ -480,9 +480,10 @@ export default function ScheduleView() {
             const dayLecturesMap = activeWeek?.days.find(([d]) => d === dateStr);
             const dayLectures = dayLecturesMap ? dayLecturesMap[1] : [];
 
+            const notAbsorbed = dayLectures.filter((l) => l.status !== "shifted");
             const filteredLectures = viewingGroupId
-              ? dayLectures.filter((l) => l.subject === "신규 과목" || findGroupBySubject(STUDY_GROUPS, l.subject)?.id === viewingGroupId)
-              : dayLectures;
+              ? notAbsorbed.filter((l) => l.subject === "신규 과목" || findGroupBySubject(STUDY_GROUPS, l.subject)?.id === viewingGroupId)
+              : notAbsorbed;
 
             const groupedLectures = new Map<string, Lecture[]>();
             filteredLectures.forEach(l => {

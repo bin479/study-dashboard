@@ -15,6 +15,7 @@ export default function FeedbackModal({ onClose }: Props) {
   const currentMember = members.find((m) => m.id === currentMemberId);
 
   const [content, setContent] = useState("");
+  const [isAnonymous, setIsAnonymous] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [success, setSuccess] = useState(false);
@@ -33,9 +34,13 @@ export default function FeedbackModal({ onClose }: Props) {
       return;
     }
 
+    const finalMemberName = isAnonymous 
+      ? `${currentMember?.name || "알 수 없음"} (익명 요청)` 
+      : (currentMember?.name || "알 수 없음");
+
     const { error } = await supabase.from("feedbacks").insert({
       member_id: currentMember?.id || "unknown",
-      member_name: currentMember?.name || "익명",
+      member_name: finalMemberName,
       content: content.trim(),
     });
 
@@ -91,6 +96,19 @@ export default function FeedbackModal({ onClose }: Props) {
                 className="min-h-[150px] w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm outline-none transition-all focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10"
                 required
               />
+
+              <div className="mt-3 flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="anonymous-checkbox"
+                  checked={isAnonymous}
+                  onChange={(e) => setIsAnonymous(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600"
+                />
+                <label htmlFor="anonymous-checkbox" className="text-sm font-medium text-slate-700 cursor-pointer select-none">
+                  익명으로 보내기
+                </label>
+              </div>
 
               {errorMsg && (
                 <p className="mt-2 text-xs text-red-500">{errorMsg}</p>

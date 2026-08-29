@@ -75,30 +75,38 @@ export default function AppShell({ children }: { children: ReactNode }) {
   }, [members]);
 
   const desktopNav = useMemo(() => {
-    if (adminMode && canUseAdminMode) return DESKTOP_NAV_ITEMS;
+    let items = DESKTOP_NAV_ITEMS;
+    if (currentMemberName === "성민수" && adminMode && canUseAdminMode) {
+      items = [...items, { href: "/feedbacks", label: "피드백", icon: ClipboardList }];
+    }
+
+    if (adminMode && canUseAdminMode) return items;
     
     if (currentMemberRole === "lead") {
-      return DESKTOP_NAV_ITEMS.filter(item => !["/roster", "/sync"].includes(item.href));
+      return items.filter(item => !["/roster", "/sync", "/feedbacks"].includes(item.href));
     }
     if (currentMemberRole === "subjectHead") {
-      return DESKTOP_NAV_ITEMS.filter(item => !["/restoration", "/roster", "/settlement", "/sync"].includes(item.href));
+      return items.filter(item => !["/restoration", "/roster", "/settlement", "/sync", "/feedbacks"].includes(item.href));
     }
     
-    return DESKTOP_NAV_ITEMS.filter(item => !["/scoring", "/restoration", "/roster", "/settlement", "/sync"].includes(item.href));
-  }, [adminMode, canUseAdminMode, currentMemberRole]);
+    return items.filter(item => !["/scoring", "/restoration", "/roster", "/settlement", "/sync", "/feedbacks"].includes(item.href));
+  }, [adminMode, canUseAdminMode, currentMemberRole, currentMemberName]);
 
   const mobileNav = useMemo(() => {
-    if (adminMode && canUseAdminMode) return MOBILE_NAV_ITEMS;
+    let items = MOBILE_NAV_ITEMS;
+    // 성민수만 볼 수 있으므로 더보기 탭 내에 피드백이 있음 (MoreView.tsx)
+    // 모바일은 더보기 탭이 이미 있으므로 따로 안 빼도 됨
+    if (adminMode && canUseAdminMode) return items;
     
     if (currentMemberRole === "lead") {
-      return MOBILE_NAV_ITEMS;
+      return items;
     }
     if (currentMemberRole === "subjectHead") {
-      return MOBILE_NAV_ITEMS.filter(item => item.href !== "/more" && item.href !== "/restoration");
+      return items.filter(item => item.href !== "/more" && item.href !== "/restoration");
     }
     
-    return MOBILE_NAV_ITEMS.filter(item => item.href !== "/scoring" && item.href !== "/restoration" && item.href !== "/more");
-  }, [adminMode, canUseAdminMode, currentMemberRole]);
+    return items.filter(item => item.href !== "/scoring" && item.href !== "/restoration" && item.href !== "/more");
+  }, [adminMode, canUseAdminMode, currentMemberRole, currentMemberName]);
 
   return (
     <div className="min-h-dvh bg-slate-50">
