@@ -38,8 +38,8 @@ export default function ActivityLogCard() {
       
       {displayLogs.length === 0 && <p className="text-xs text-slate-400">아직 활동 기록이 없습니다.</p>}
       
-      <div className="space-y-3">
-        {displayLogs.slice(0, 5).map((log) => (
+      <div className={`space-y-3 ${isSungmin ? "max-h-96 overflow-y-auto pr-2" : ""}`}>
+        {displayLogs.slice(0, isSungmin ? 10000 : 5).map((log) => (
           <div key={log.id} className="flex items-start gap-2 text-xs">
             {log.type === "sync" ? (
               log.direction === "pull" ? (
@@ -58,7 +58,7 @@ export default function ActivityLogCard() {
             </div>
           </div>
         ))}
-        {displayLogs.length > 5 && (
+        {!isSungmin && displayLogs.length > 5 && (
           <p className="pt-2 text-center text-xs text-slate-400">
             그 외 {displayLogs.length - 5}개의 기록이 있습니다.
           </p>

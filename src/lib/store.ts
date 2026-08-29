@@ -443,7 +443,7 @@ export const useDashboardStore = create<DashboardState>()(
           activityLog: [
             { id: uid("log"), timestamp: new Date().toISOString(), ...log },
             ...state.activityLog,
-          ].slice(0, 100),
+          ].slice(0, 10000),
         })),
 
       runScheduleAction: (lectureId, action) => {
