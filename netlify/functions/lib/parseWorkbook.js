@@ -291,7 +291,11 @@ function parseTimetableSheet(sheet, splitTitles, mergeTitles) {
         const curTopic = r.topic && r.topic !== r.subject ? r.topic : r.subject;
         if (!prevTopic.includes(curTopic)) prev.topic = `${prevTopic} & ${curTopic}`;
         prev.durationHours += r.durationHours;
-        prev.endTime = r.endTime;
+        // 병합 대상이 바로 다음 교시가 아니라 떨어진 교시일 수도 있어서(예: 1교시 +
+        // 3교시), endTime을 r의 실제 끝 시각이 아니라 prev.startTime + 합산
+        // durationHours로 다시 계산한다 — 그래야 실제 소요시간과 화면 표시가 맞는다.
+        const [startHour, startMin] = prev.startTime.split(":");
+        prev.endTime = `${pad2(parseInt(startHour, 10) + prev.durationHours)}:${startMin}`;
         const lastOrder = r.order + r.durationHours - 1;
         prev.period = lastOrder === prev.order ? `${prev.order}교시` : `${prev.order}~${lastOrder}교시`;
 

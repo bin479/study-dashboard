@@ -35,10 +35,14 @@ function getLectureColor(lecture: Lecture, groupId: string | null) {
   // Use study group colors if assigned
   const group = findGroupBySubject(STUDY_GROUPS, lecture.subject);
   if (group) {
-    // If it's a specific group's subject, tint it with their color. 
-    // Here we'll just use a generic pastel color based on subject string hash for variety if color is raw hex.
-    // Let's use generic colors for major/minor for now, or match the screenshot (which uses light pink/orange)
-    return "bg-[#fbe4d5] text-slate-900 border-[#f4c8b2]";
+    switch(group.id) {
+      case "g1": return "bg-red-50 text-red-900 border-red-200";
+      case "g2": return "bg-orange-50 text-orange-900 border-orange-200";
+      case "g3": return "bg-yellow-50 text-yellow-900 border-yellow-200";
+      case "g4": return "bg-green-50 text-green-900 border-green-200";
+      case "g5": return "bg-blue-50 text-blue-900 border-blue-200";
+      default: return "bg-[#fbe4d5] text-slate-900 border-[#f4c8b2]";
+    }
   }
 
   if (lecture.subjectType === "major") return "bg-indigo-50 text-indigo-900 border-indigo-200";
@@ -230,6 +234,21 @@ export default function ScheduleView() {
       return isMerged && isNotConfirmed;
     });
   }, [assignments, currentMemberRole, currentMember, lectures]);
+
+  const lectureNumberMap = useMemo(() => {
+    const map = new Map<string, number>();
+    const subjectCounters = new Map<string, number>();
+    const sorted = [...lectures]
+      .filter(l => l.assignable && l.status !== "cancelled" && l.status !== "shifted")
+      .sort((a, b) => a.date.localeCompare(b.date) || a.order - b.order);
+    for (const l of sorted) {
+      const current = subjectCounters.get(l.subject) || 0;
+      const next = current + 1;
+      subjectCounters.set(l.subject, next);
+      map.set(l.id, next);
+    }
+    return map;
+  }, [lectures]);
 
   return (
     <div className="space-y-6">
@@ -551,13 +570,19 @@ export default function ScheduleView() {
                     {lecture.assignable && (
                       <div className="text-[9px] mt-1 opacity-85 font-medium leading-tight text-center">
                         {(() => {
-                          const allRows = group.flatMap(l => assignments.filter((a) => a.lectureId === l.id));
+                          const allRows = group.flatMap(l => {
+                            const lAssignments = assignments.filter((a) => a.lectureId === l.id);
+                            return lAssignments.map(a => ({ a, lId: l.id }));
+                          });
                           if (allRows.length === 0) return <span>미배정</span>;
-                          return allRows.map((a, idx) => {
+                          return allRows.map(({ a, lId }, idx) => {
                             const d = members.find(m => m.id === a.draftMemberId)?.name ?? "미배정";
                             const p = members.find(m => m.id === a.proofMemberId)?.name ?? "미배정";
+                            const num = lectureNumberMap.get(lId);
                             return (
-                              <div key={idx}>초:{d} / 검:{p}</div>
+                              <div key={idx}>
+                                {num ? <span className="font-bold text-indigo-700">[{num}번] </span> : ""}초:{d} / 검:{p}
+                              </div>
                             );
                           });
                         })()}
