@@ -152,7 +152,7 @@ export default function HomeView() {
   let manualTitle = "사용 설명서 읽기";
   
   if (isLeadOrAdmin) {
-    manualLink = "https://app.notion.com/p/1-3cc922955648800981f9db82d73a7871?source=copy_link";
+    manualLink = "https://app.notion.com/p/1-3cc922955648800981f9db82d73a7871#3cc9229556488055a59ec13de2f2a5c2";
     manualTitle = "사용 설명서 읽기 (그룹장/관리자)";
   } else if (isSubjectHead) {
     manualLink = "https://app.notion.com/p/3cc92295564880a3abeaf94b9dbff4db?source=copy_link";
