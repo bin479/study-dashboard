@@ -144,11 +144,26 @@ export default function HomeView() {
     return allTasks.sort((a, b) => a.date.localeCompare(b.date));
   }, [assignments, currentMemberId, isLead, lectures, members]);
 
+  const ADMIN_NAMES = ["한상희", "성민수"];
+  const isAdmin = currentMember && ADMIN_NAMES.includes(currentMember.name);
+  const isLeadOrAdmin = isLead || isAdmin;
+
+  let manualLink = "https://app.notion.com/p/3cc922955648803b9312e97654069fb9?source=copy_link";
+  let manualTitle = "사용 설명서 읽기";
+  
+  if (isLeadOrAdmin) {
+    manualLink = "https://app.notion.com/p/1-3cc922955648800981f9db82d73a7871?source=copy_link";
+    manualTitle = "사용 설명서 읽기 (그룹장/관리자)";
+  } else if (isSubjectHead) {
+    manualLink = "https://app.notion.com/p/3cc92295564880a3abeaf94b9dbff4db?source=copy_link";
+    manualTitle = "사용 설명서 읽기 (과목부장)";
+  }
+
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border border-indigo-200 bg-white shadow-sm overflow-hidden">
         <a
-          href="/manual.pdf"
+          href={manualLink}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center justify-between bg-indigo-50 px-5 py-4 transition-colors hover:bg-indigo-100"
@@ -158,8 +173,8 @@ export default function HomeView() {
               <BookOpen size={20} />
             </div>
             <div>
-              <p className="font-bold text-indigo-900">사용 설명서 읽기</p>
-              <p className="text-xs text-indigo-600 mt-0.5">대시보드 기능 및 권한별 가이드북 (PDF)</p>
+              <p className="font-bold text-indigo-900">{manualTitle}</p>
+              <p className="text-xs text-indigo-600 mt-0.5">권한에 맞는 맞춤형 가이드 (Notion)</p>
             </div>
           </div>
           <ExternalLink size={18} className="text-indigo-400" />
