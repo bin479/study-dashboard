@@ -18,6 +18,7 @@ export default function WallpaperModal({ onClose, weeks }: Props) {
   const [tabletLayout, setTabletLayout] = useState<"1col" | "2col">("2col");
   const [weeksCount, setWeeksCount] = useState(1);
   const [startWeekIndex, setStartWeekIndex] = useState(0);
+  const [hideAssignees, setHideAssignees] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
   const wallpaperRef = useRef<HTMLDivElement>(null);
@@ -118,6 +119,19 @@ export default function WallpaperModal({ onClose, weeks }: Props) {
               </select>
             </div>
           </div>
+
+          <div className="flex items-center gap-2 pt-1">
+            <input
+              type="checkbox"
+              id="hideAssignees"
+              checked={hideAssignees}
+              onChange={(e) => setHideAssignees(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <label htmlFor="hideAssignees" className="text-sm font-semibold text-slate-700 select-none">
+              초안자/검안자 제외하고 과목명 크게 보기
+            </label>
+          </div>
         </div>
 
         <div className="border-t border-slate-100 p-4">
@@ -143,6 +157,7 @@ export default function WallpaperModal({ onClose, weeks }: Props) {
           weeksCount={weeksCount}
           startWeekIndex={startWeekIndex}
           allWeeks={weeks}
+          hideAssignees={hideAssignees}
         />
       </div>
     </div>

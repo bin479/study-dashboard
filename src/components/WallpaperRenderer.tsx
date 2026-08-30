@@ -13,6 +13,7 @@ interface Props {
   weeksCount: number;
   startWeekIndex: number;
   allWeeks: any[];
+  hideAssignees?: boolean;
 }
 
 const WEEKDAYS = ["월", "화", "수", "목", "금"];
@@ -45,6 +46,7 @@ export const WallpaperRenderer = forwardRef<HTMLDivElement, Props>(({
   weeksCount,
   startWeekIndex,
   allWeeks,
+  hideAssignees = false,
 }, ref) => {
   const selectedWeeks = allWeeks.slice(startWeekIndex, startWeekIndex + weeksCount);
   const memberName = (id: string | null) => members.find(m => m.id === id)?.name || "미배정";
@@ -135,12 +137,16 @@ export const WallpaperRenderer = forwardRef<HTMLDivElement, Props>(({
                 : `${lecture.subject}${lecture.sessionNumber ? ` ${lecture.sessionNumber}번` : ""}`;
                 
               const textLen = titleText.length;
-              let titleSize = isShort ? 14 : 18;
+              let titleSize = hideAssignees 
+                ? (isShort ? 18 : 24)
+                : (isShort ? 14 : 18);
               if (textLen > 12) titleSize -= 2;
               if (textLen > 18) titleSize -= 2;
               if (textLen > 25) titleSize -= 2;
               
-              let detailsSize = isShort ? 10 : 13;
+              let detailsSize = hideAssignees
+                ? (isShort ? 13 : 16)
+                : (isShort ? 10 : 13);
               if (isSplit) detailsSize -= 1;
               if (group.length > 2) detailsSize -= 1;
 
@@ -163,7 +169,7 @@ export const WallpaperRenderer = forwardRef<HTMLDivElement, Props>(({
                         <p style={{ fontSize: `${titleSize}px` }} className="font-bold leading-tight break-keep line-clamp-2">
                           {titleText} {lecture.professor && <span style={{ fontSize: `${detailsSize}px`, fontWeight: 'normal', opacity: 0.9 }}>({lecture.professor})</span>}
                         </p>
-                        {lecture.assignable && (
+                        {!hideAssignees && lecture.assignable && (
                           <div style={{ fontSize: `${detailsSize}px` }} className="mt-0.5 opacity-85 font-medium leading-tight text-center tracking-tight flex flex-wrap justify-center gap-x-1 gap-y-0.5">
                             {(() => {
                               const allRows = group.flatMap(l => {
@@ -188,7 +194,7 @@ export const WallpaperRenderer = forwardRef<HTMLDivElement, Props>(({
                             ({lecture.professor})
                           </p>
                         )}
-                        {lecture.assignable && (
+                        {!hideAssignees && lecture.assignable && (
                           <div style={{ fontSize: `${detailsSize}px` }} className="mt-1 opacity-85 font-medium leading-tight text-center tracking-tight">
                             {(() => {
                               const allRows = group.flatMap(l => {
