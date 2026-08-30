@@ -30,6 +30,8 @@ export default function RestorationView() {
 
   const [isChecklistOpen, setIsChecklistOpen] = useState(false);
   const [isLoadStateModalOpen, setIsLoadStateModalOpen] = useState(false);
+  const [isSaveStateModalOpen, setIsSaveStateModalOpen] = useState(false);
+  const [saveMemo, setSaveMemo] = useState("");
   const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
   const [isExcelImportOpen, setIsExcelImportOpen] = useState(false);
   const [excelImportText, setExcelImportText] = useState("");
@@ -338,11 +340,14 @@ export default function RestorationView() {
 
   const handleSaveState = () => {
     const defaultMemo = `${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()} 저장본`;
-    const memo = window.prompt("저장할 현황의 메모나 과목명을 입력하세요:", defaultMemo);
-    if (memo !== null) {
-      saveRestorationState(memo || defaultMemo);
-      alert("현황이 저장되었습니다. '현황 불러오기'에서 확인할 수 있습니다.");
-    }
+    setSaveMemo(defaultMemo);
+    setIsSaveStateModalOpen(true);
+  };
+
+  const confirmSaveState = () => {
+    saveRestorationState(saveMemo || `${new Date().toLocaleDateString()} 저장본`);
+    alert("현황이 저장되었습니다. '현황 불러오기'에서 확인할 수 있습니다.");
+    setIsSaveStateModalOpen(false);
   };
 
   const handleDownloadFile = () => {
@@ -1183,6 +1188,40 @@ export default function RestorationView() {
                 className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-200"
               >
                 닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isSaveStateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <h2 className="text-lg font-bold text-slate-800 mb-4">현황 저장하기</h2>
+            <p className="text-sm text-slate-600 mb-2">저장할 현황의 메모나 과목명을 입력하세요:</p>
+            <input
+              type="text"
+              value={saveMemo}
+              onChange={(e) => setSaveMemo(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') confirmSaveState();
+              }}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 mb-6"
+              placeholder="예: 9월 10일 전체 배정 완료"
+              autoFocus
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setIsSaveStateModalOpen(false)}
+                className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-200"
+              >
+                취소
+              </button>
+              <button
+                onClick={confirmSaveState}
+                className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+              >
+                저장하기
               </button>
             </div>
           </div>
