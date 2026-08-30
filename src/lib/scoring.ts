@@ -41,14 +41,18 @@ export function draftBasePoints(subjectType: SubjectType, durationHours: number)
   return SCORING_RULES.draftPerHour[subjectType] * durationHours;
 }
 
-/** 검안이 "초안 쓴 수준"이면 초안과 동일한 공식(메8/마4)을 적용한다. */
 export function proofBasePoints(
   subjectType: SubjectType,
   durationHours: number,
   atDraftLevel: boolean
 ): number {
   if (atDraftLevel) return draftBasePoints(subjectType, durationHours);
-  return SCORING_RULES.proofFlat[subjectType];
+  
+  if (subjectType === "major") {
+    return durationHours === 1 ? 3 : 5;
+  } else {
+    return durationHours === 1 ? 1.5 : 2.5;
+  }
 }
 
 /** 
@@ -56,40 +60,46 @@ export function proofBasePoints(
  */
 export const CHECKLIST_TIERS_2HR_MAJOR = [
   { id: "2hr_major_normal", draft: 8, proof: 5, reason: "밀도 정상(8점)", description: "일반적인 2시간 분량의 메이저 수업. 밀도가 정상적이거나 수업 시간이 꽉 차게 진행된 경우 선택합니다." },
-  { id: "2hr_major_new_short", draft: 6, proof: 3, reason: "신규 작성 & 적은 양(6점)", description: "전년도 기출이나 기존 자료가 없어서 처음부터 새로 작성해야 했지만, 절대적인 수업 분량이나 시간이 적었던 경우 선택합니다." },
+  { id: "2hr_major_new_short", draft: 6, proof: 4, reason: "신규 작성 & 적은 양(6점)", description: "전년도 기출이나 기존 자료가 없어서 처음부터 새로 작성해야 했지만, 절대적인 수업 분량이나 시간이 적었던 경우 선택합니다." },
   { id: "2hr_major_simple", draft: 4, proof: 2.5, reason: "단순 수정(4점)", description: "전년도 자료와 거의 유사하여 단순 수정 위주로 작업이 이루어진 경우 선택합니다." },
   { id: "2hr_major_past", draft: 2, proof: 1, reason: "기출 추가(2점)", description: "수업 내용의 변동 없이 단순히 기출문제만 몇 개 추가하는 정도로 작업이 마무리된 경우 선택합니다." },
 ] as const;
 
 /** 
- * 체크리스트 기반 점수 산정 룰 (1시간 수업)
+ * 체크리스트 기반 점수 산정 룰 (1시간 메이저 수업)
  */
-export const CHECKLIST_TIERS_1HR = [
-  { id: "1hr_normal", draft: 4, proof: 2.5, reason: "일반/단순 분량", description: "일반적인 1시간 수업이거나 내용이 단순하여 작업량이 많지 않았던 경우 선택합니다." },
-  { id: "1hr_high_density", draft: 6, proof: 3, reason: "풀타임 고밀도", description: "1시간 수업이지만 휴식 없이 풀타임으로 꽉 채워 진행되었고, 밀도가 매우 높아 작업량이 2시간 수업과 맞먹는 경우 선택합니다." },
+export const CHECKLIST_TIERS_1HR_MAJOR = [
+  { id: "1hr_major_normal", draft: 4, proof: 3, reason: "일반/단순 분량(4점)", description: "일반적인 1시간 수업이거나 내용이 단순하여 작업량이 많지 않았던 경우 선택합니다." },
+  { id: "1hr_major_high_density", draft: 6, proof: 4, reason: "풀타임 고밀도(6점)", description: "1시간 수업이지만 휴식 없이 풀타임으로 꽉 채워 진행되었고, 밀도가 매우 높아 작업량이 2시간 수업과 맞먹는 경우 선택합니다." },
 ] as const;
 
 /**
  * 체크리스트 기반 점수 산정 룰 (2시간 마이너 수업)
  */
 export const CHECKLIST_TIERS_2HR_MINOR = [
-  { id: "2hr_minor_normal", draft: 4, proof: 2.5, reason: "마이너 기본", description: "PBL, 세미나 등 일반적인 마이너 과목의 기본 배점입니다." },
+  { id: "2hr_minor_normal", draft: 4, proof: 2.5, reason: "마이너 2시간 기본(4점)", description: "PBL, 세미나 등 일반적인 마이너 2시간 과목의 기본 배점입니다." },
+] as const;
+
+/**
+ * 체크리스트 기반 점수 산정 룰 (1시간 마이너 수업)
+ */
+export const CHECKLIST_TIERS_1HR_MINOR = [
+  { id: "1hr_minor_normal", draft: 2, proof: 1.5, reason: "마이너 1시간 기본(2점)", description: "PBL, 세미나 등 일반적인 마이너 1시간 과목의 기본 배점입니다." },
 ] as const;
 
 /**
  * 수업의 타입(메이저/마이너)과 배정 시간(1시간/2시간)을 기반으로 해당 수업에 적용될 수 있는 티어 목록을 반환합니다.
  */
 export function getAvailableTiers(subjectType: SubjectType, durationHours: number) {
-  if (durationHours === 1) return CHECKLIST_TIERS_1HR;
-  if (subjectType === "minor") return CHECKLIST_TIERS_2HR_MINOR;
-  return CHECKLIST_TIERS_2HR_MAJOR;
+  if (subjectType === "minor") {
+    return durationHours === 1 ? CHECKLIST_TIERS_1HR_MINOR : CHECKLIST_TIERS_2HR_MINOR;
+  } else {
+    return durationHours === 1 ? CHECKLIST_TIERS_1HR_MAJOR : CHECKLIST_TIERS_2HR_MAJOR;
+  }
 }
 
 /**
  * 수업의 타입과 배정 시간을 기반으로 "기본적으로 선택될(예상되는)" 디폴트 티어를 반환합니다.
- * - 2시간 메이저: 밀도 정상
- * - 1시간: 일반/단순 분량
- * - 2시간 마이너: 마이너 기본
  */
 export function getDefaultTier(subjectType: SubjectType, durationHours: number) {
   const tiers = getAvailableTiers(subjectType, durationHours);
