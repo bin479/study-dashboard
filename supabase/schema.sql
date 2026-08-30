@@ -108,7 +108,8 @@ create table if not exists exam_checklist (
 create table if not exists app_settings (
   id int primary key default 1 check (id = 1),
   "draftRoom" text not null default '그룹2 톡방',
-  "proofRoom" text not null default '과목부장 톡방'
+  "proofRoom" text not null default '과목부장 톡방',
+  "groupSettings" jsonb not null default '{}'::jsonb
 );
 insert into app_settings (id) values (1) on conflict (id) do nothing;
 

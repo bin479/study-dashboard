@@ -139,7 +139,7 @@ interface DashboardState {
   memberExtraScores: MemberExtraScore[];
   activityLog: ActivityLogEntry[];
   sheetUrls: { lectures: string; members: string };
-  noticeSettings: { draftRoom: string; proofRoom: string };
+  noticeSettings: { draftRoom: string; proofRoom: string; groupSettings: Record<string, { draftRoom: string; proofRoom: string }> };
   viewingGroupId: string | null; // 상단 그룹 전환 스위처 — null이면 전체 보기
   simulatedToday: string | null; // 날짜 시뮬레이션 — null이면 실제 오늘
   currentMemberId: string | null; // 이름+PIN으로 로그인한 이 브라우저의 멤버
@@ -147,7 +147,7 @@ interface DashboardState {
   supabaseReady: boolean; // initFromSupabase가 원격 데이터 로드를 마쳤는지
   adminMode: boolean; // 관리자용 모드 활성화 여부
 
-  setNoticeSettings: (settings: { draftRoom: string; proofRoom: string }) => void;
+  setNoticeSettings: (settings: DashboardState["noticeSettings"]) => void;
   setViewingGroupId: (groupId: string | null) => void;
   setSimulatedToday: (date: string | null) => void;
   setCurrentMemberId: (memberId: string | null) => void;
@@ -234,7 +234,7 @@ export const useDashboardStore = create<DashboardState>()(
       pastStates: [],
       savedRestorationStates: [],
       sheetUrls: { lectures: "", members: "" },
-      noticeSettings: { draftRoom: "그룹2 톡방", proofRoom: "과목부장 톡방" },
+      noticeSettings: { draftRoom: "그룹2 톡방", proofRoom: "과목부장 톡방", groupSettings: {} },
       viewingGroupId: null,
       simulatedToday: null,
       currentMemberId: null,
@@ -246,7 +246,7 @@ export const useDashboardStore = create<DashboardState>()(
 
       setNoticeSettings: (settings) => {
         set({ noticeSettings: settings });
-        syncRow("app_settings", { id: 1, ...settings });
+        syncRow("app_settings", { id: 1, draftRoom: settings.draftRoom, proofRoom: settings.proofRoom, groupSettings: settings.groupSettings });
       },
       setViewingGroupId: (groupId) => set({ viewingGroupId: groupId }),
       setSimulatedToday: (date) => set({ simulatedToday: date }),
@@ -302,7 +302,7 @@ export const useDashboardStore = create<DashboardState>()(
           restorationItems: (restorationRes.data ?? []) as RestorationItem[],
           examChecklist: (checklistRes.data ?? []) as ExamChecklistItem[],
           noticeSettings: settingsRes.data
-            ? { draftRoom: settingsRes.data.draftRoom, proofRoom: settingsRes.data.proofRoom }
+            ? { draftRoom: settingsRes.data.draftRoom, proofRoom: settingsRes.data.proofRoom, groupSettings: settingsRes.data.groupSettings || {} }
             : get().noticeSettings,
           supabaseReady: true,
         });
@@ -347,8 +347,8 @@ export const useDashboardStore = create<DashboardState>()(
             handleChange("examChecklist", p)
           )
           .on("postgres_changes", { event: "UPDATE", schema: "public", table: "app_settings" }, (p) => {
-            const row = p.new as { draftRoom: string; proofRoom: string };
-            set({ noticeSettings: { draftRoom: row.draftRoom, proofRoom: row.proofRoom } });
+            const row = p.new as { draftRoom: string; proofRoom: string; groupSettings: Record<string, { draftRoom: string; proofRoom: string }> };
+            set({ noticeSettings: { draftRoom: row.draftRoom, proofRoom: row.proofRoom, groupSettings: row.groupSettings || {} } });
           })
           .subscribe();
       },

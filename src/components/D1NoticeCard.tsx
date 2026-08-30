@@ -36,10 +36,16 @@ export default function D1NoticeCard() {
     () => buildD1NoticeLines(scopedLectures, assignments, members, tomorrow),
     [scopedLectures, assignments, members, tomorrow]
   );
-  const dynamicDraftRoom = viewingGroup ? `${viewingGroup.name} 톡방` : noticeSettings.draftRoom;
+  const currentDraftRoom = viewingGroup
+    ? noticeSettings.groupSettings[viewingGroup.id]?.draftRoom ?? `${viewingGroup.name} 톡방`
+    : noticeSettings.draftRoom;
+  const currentProofRoom = viewingGroup
+    ? noticeSettings.groupSettings[viewingGroup.id]?.proofRoom ?? noticeSettings.proofRoom
+    : noticeSettings.proofRoom;
+
   const noticeText = useMemo(
-    () => generateD1NoticeText(scopedLectures, assignments, members, tomorrow, { ...noticeSettings, draftRoom: dynamicDraftRoom }),
-    [scopedLectures, assignments, members, tomorrow, noticeSettings, dynamicDraftRoom]
+    () => generateD1NoticeText(scopedLectures, assignments, members, tomorrow, { ...noticeSettings, draftRoom: currentDraftRoom, proofRoom: currentProofRoom }),
+    [scopedLectures, assignments, members, tomorrow, noticeSettings, currentDraftRoom, currentProofRoom]
   );
 
   const handleCopy = async () => {
@@ -89,18 +95,48 @@ export default function D1NoticeCard() {
       {showSettings && (
         <div className="mx-4 mb-3 space-y-2 rounded-xl bg-white/10 p-3 sm:mx-5">
           <label className="block text-xs text-indigo-100">
-            초안 업로드 톡방 이름
+            초안 업로드 톡방 이름 {viewingGroup && <span className="opacity-70">({viewingGroup.name} 전용)</span>}
             <input
-              value={noticeSettings.draftRoom}
-              onChange={(e) => setNoticeSettings({ ...noticeSettings, draftRoom: e.target.value })}
+              value={currentDraftRoom}
+              onChange={(e) => {
+                if (viewingGroup) {
+                  setNoticeSettings({
+                    ...noticeSettings,
+                    groupSettings: {
+                      ...noticeSettings.groupSettings,
+                      [viewingGroup.id]: {
+                        draftRoom: e.target.value,
+                        proofRoom: currentProofRoom,
+                      },
+                    },
+                  });
+                } else {
+                  setNoticeSettings({ ...noticeSettings, draftRoom: e.target.value });
+                }
+              }}
               className="mt-1 w-full rounded-lg bg-white/90 px-2 py-1.5 text-sm text-slate-800"
             />
           </label>
           <label className="block text-xs text-indigo-100">
-            검안 업로드 톡방 이름
+            검안 업로드 톡방 이름 {viewingGroup && <span className="opacity-70">({viewingGroup.name} 전용)</span>}
             <input
-              value={noticeSettings.proofRoom}
-              onChange={(e) => setNoticeSettings({ ...noticeSettings, proofRoom: e.target.value })}
+              value={currentProofRoom}
+              onChange={(e) => {
+                if (viewingGroup) {
+                  setNoticeSettings({
+                    ...noticeSettings,
+                    groupSettings: {
+                      ...noticeSettings.groupSettings,
+                      [viewingGroup.id]: {
+                        draftRoom: currentDraftRoom,
+                        proofRoom: e.target.value,
+                      },
+                    },
+                  });
+                } else {
+                  setNoticeSettings({ ...noticeSettings, proofRoom: e.target.value });
+                }
+              }}
               className="mt-1 w-full rounded-lg bg-white/90 px-2 py-1.5 text-sm text-slate-800"
             />
           </label>
@@ -140,8 +176,8 @@ export default function D1NoticeCard() {
           </div>
         ))}
         <div className="pt-1 text-xs text-indigo-100">
-          <p>초안기한: {formatDateWithWeekday(isoDate(2, simulatedToday))} 오전 9시 ({dynamicDraftRoom}으로)</p>
-          <p>검안기한: 초안 업로드 이후 48시간 ({noticeSettings.proofRoom}으로)</p>
+          <p>초안기한: {formatDateWithWeekday(isoDate(2, simulatedToday))} 오전 9시 ({currentDraftRoom}으로)</p>
+          <p>검안기한: 초안 업로드 이후 48시간 ({currentProofRoom}으로)</p>
         </div>
       </div>
     </section>
