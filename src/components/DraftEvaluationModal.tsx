@@ -25,12 +25,14 @@ export default function DraftEvaluationModal({ assignment, lecture, draftMemberN
   const [spreadsheetMissing, setSpreadsheetMissing] = useState<boolean>(false);
   const [marksChecked, setMarksChecked] = useState<boolean>(true);
 
-  const calculateAdjustment = () => {
+    const isMajor1Hr = lecture.subjectType === "major" && lecture.durationHours === 1;
+    const newBonus = isMajor1Hr ? 3.0 : 6.0;
+
     let bonus = 0;
     if (similarity === "70-80") bonus += 1.0;
     else if (similarity === "50-") bonus += 2.5; // Average of 2~3
     else if (similarity === "rev") bonus += 2.0;
-    else if (similarity === "new") bonus += 6.0;
+    else if (similarity === "new") bonus += newBonus;
 
     bonus += readabilityBonus;
 
@@ -50,13 +52,15 @@ export default function DraftEvaluationModal({ assignment, lecture, draftMemberN
 
   const generateReport = () => {
     const { bonus, penalty, total } = calculateAdjustment();
-    
+    const isMajor1Hr = lecture.subjectType === "major" && lecture.durationHours === 1;
+    const newBonus = isMajor1Hr ? 3.0 : 6.0;
+
     // Similarity Text
     let simText = "90% 이상 동일 (가산점 없음)";
     if (similarity === "70-80") simText = "70~80% (변동사항 충실 반영, +1.0점)";
     if (similarity === "50-") simText = "50% 미만 (+2.5점)";
     if (similarity === "rev") simText = "전면 개정 재작업 (+2.0점)";
-    if (similarity === "new") simText = "교수 변경 또는 신규 전면 작성 (+6.0점)";
+    if (similarity === "new") simText = `교수 변경 또는 신규 전면 작성 (+${newBonus.toFixed(1)}점)`;
 
     let penaltyText = `[감점 내역: 총 ${penalty}점]\n`;
     const deductions = [];
@@ -120,7 +124,7 @@ ${penaltyText}
                 <option value="70-80">70~80% - 변동사항 충실 반영 (+1.0점)</option>
                 <option value="50-">50% 미만 (+2.5점)</option>
                 <option value="rev">강의안 전면 개정 재작업 (+2.0점)</option>
-                <option value="new">교수 변경 또는 신규 전면 작성 (+6.0점)</option>
+                <option value="new">교수 변경 또는 신규 전면 작성 (+{lecture.subjectType === "major" && lecture.durationHours === 1 ? "3.0" : "6.0"}점)</option>
               </select>
             </div>
             <div>
