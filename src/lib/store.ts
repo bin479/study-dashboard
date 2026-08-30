@@ -561,6 +561,8 @@ export const useDashboardStore = create<DashboardState>()(
       },
 
       setDraftAdjustment: (assignmentId, amount, reason) => {
+        let shouldSync = false;
+        let newLog: ActivityLogEntry | null = null;
         set((state) => {
           const idx = state.assignments.findIndex((a) => a.id === assignmentId);
           if (idx === -1) return state;
@@ -570,12 +572,13 @@ export const useDashboardStore = create<DashboardState>()(
           if (a.draftAdjustment !== amount || a.draftAdjustmentReason !== reason) {
             a.draftAdjustment = amount;
             a.draftAdjustmentReason = reason;
+            shouldSync = true;
             
             const currentMember = state.members.find(m => m.id === state.currentMemberId);
             const draftMember = state.members.find(m => m.id === a.draftMemberId);
             if (currentMember && currentMember.groupId) {
               const roleName = currentMember.role === "lead" ? "그룹장" : "과목부장";
-              const newLog: ActivityLogEntry = {
+              newLog = {
                 id: uid("log"),
                 timestamp: new Date().toISOString(),
                 type: "evaluation",
@@ -591,9 +594,15 @@ export const useDashboardStore = create<DashboardState>()(
           }
           return { assignments: newAssignments };
         });
+        if (shouldSync) {
+          syncRow("assignments", { id: assignmentId, draftAdjustment: amount, draftAdjustmentReason: reason });
+          if (newLog) syncRow("activity_logs", newLog);
+        }
       },
 
       setProofAdjustment: (assignmentId, amount, reason, applyDraftLevel) => {
+        let shouldSync = false;
+        let newLog: ActivityLogEntry | null = null;
         set((state) => {
           const idx = state.assignments.findIndex((a) => a.id === assignmentId);
           if (idx === -1) return state;
@@ -604,12 +613,13 @@ export const useDashboardStore = create<DashboardState>()(
             a.proofAdjustment = amount;
             a.proofAdjustmentReason = reason;
             a.proofAtDraftLevel = applyDraftLevel;
+            shouldSync = true;
             
             const currentMember = state.members.find(m => m.id === state.currentMemberId);
             const proofMember = state.members.find(m => m.id === a.proofMemberId);
             if (currentMember && currentMember.groupId) {
               const roleName = currentMember.role === "lead" ? "그룹장" : "과목부장";
-              const newLog: ActivityLogEntry = {
+              newLog = {
                 id: uid("log"),
                 timestamp: new Date().toISOString(),
                 type: "evaluation",
@@ -625,6 +635,10 @@ export const useDashboardStore = create<DashboardState>()(
           }
           return { assignments: newAssignments };
         });
+        if (shouldSync) {
+          syncRow("assignments", { id: assignmentId, proofAdjustment: amount, proofAdjustmentReason: reason, proofAtDraftLevel: applyDraftLevel });
+          if (newLog) syncRow("activity_logs", newLog);
+        }
       },
 
       toggleProofAtDraftLevel: (assignmentId) => {
