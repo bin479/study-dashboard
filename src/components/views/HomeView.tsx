@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, Clock, ListChecks, ArrowRight, Trophy, ChevronRight, ExternalLink, Award } from "lucide-react";
+import { AlertTriangle, Clock, ListChecks, ArrowRight, Trophy, ChevronRight, ExternalLink, Award, BookOpen } from "lucide-react";
 import { useDashboardStore } from "@/lib/store";
 import D1NoticeCard from "../D1NoticeCard";
 import StatusBadge from "../StatusBadge";
@@ -146,6 +146,26 @@ export default function HomeView() {
 
   return (
     <div className="space-y-6">
+      <div className="rounded-2xl border border-indigo-200 bg-white shadow-sm overflow-hidden">
+        <a
+          href="/manual.pdf"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-between bg-indigo-50 px-5 py-4 transition-colors hover:bg-indigo-100"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 text-white shadow-md">
+              <BookOpen size={20} />
+            </div>
+            <div>
+              <p className="font-bold text-indigo-900">사용 설명서 읽기</p>
+              <p className="text-xs text-indigo-600 mt-0.5">대시보드 기능 및 권한별 가이드북 (PDF)</p>
+            </div>
+          </div>
+          <ExternalLink size={18} className="text-indigo-400" />
+        </a>
+      </div>
+
       {myTasks.length > 0 && (
         <div className={`rounded-2xl border border-indigo-200 bg-indigo-50 shadow-sm ${isSubjectHead ? 'p-6 sm:p-8' : 'p-4'}`}>
           <div className="flex items-center gap-2 mb-2">
