@@ -51,6 +51,30 @@ export const WallpaperRenderer = forwardRef<HTMLDivElement, Props>(({
   const selectedWeeks = allWeeks.slice(startWeekIndex, startWeekIndex + weeksCount);
   const memberName = (id: string | null) => members.find(m => m.id === id)?.name || "미배정";
 
+  const getDeviceConfig = (model: string) => {
+    switch (model) {
+      case "phone_standard": return { width: '1170px', height: '2532px', topPadding: '480px', isTablet: false };
+      case "phone_flip": return { width: '1080px', height: '2640px', topPadding: '500px', isTablet: false };
+      case "phone_fold_out": return { width: '904px', height: '2316px', topPadding: '450px', isTablet: false };
+      case "tablet_ipad": return { width: '2732px', height: '2048px', topPadding: '160px', isTablet: true };
+      case "tablet_galaxy": return { width: '2560px', height: '1600px', topPadding: '160px', isTablet: true };
+      case "tablet_fold_in": return { width: '2176px', height: '1812px', topPadding: '160px', isTablet: true };
+      default: return { width: '1170px', height: '2532px', topPadding: '480px', isTablet: false };
+    }
+  };
+
+  const config = getDeviceConfig(deviceModel);
+  const is2Col = config.isTablet && tabletLayout === "2col";
+  
+  let scaleFactor = 1;
+  if (!is2Col) {
+    if (weeksCount === 2) scaleFactor = 0.85;
+    if (weeksCount === 3) scaleFactor = 0.65;
+    if (weeksCount === 4) scaleFactor = 0.50;
+  } else {
+    if (weeksCount > 2) scaleFactor = 0.85;
+  }
+
   const renderWeek = (week: any) => {
     const weekDates = week.days.map((d: any) => d[0]);
 
@@ -150,10 +174,13 @@ export const WallpaperRenderer = forwardRef<HTMLDivElement, Props>(({
               if (isSplit) detailsSize -= 1;
               if (group.length > 2) detailsSize -= 1;
 
+              titleSize = Math.max(8, Math.round(titleSize * scaleFactor));
+              detailsSize = Math.max(6, Math.round(detailsSize * scaleFactor));
+
               return (
                 <div
                   key={lecture.id}
-                  className={`m-[3px] rounded-[10px] border p-1 flex flex-col justify-center items-center text-center overflow-hidden shadow-sm
+                  className={`m-[3px] rounded-[10px] border ${scaleFactor < 0.8 ? 'p-0.5' : 'p-1'} flex flex-col justify-center items-center text-center overflow-hidden shadow-sm
                     ${getLectureColor(lecture)}
                     ${isInactive ? "opacity-50" : ""}
                   `}
@@ -225,21 +252,6 @@ export const WallpaperRenderer = forwardRef<HTMLDivElement, Props>(({
     );
   };
 
-  const getDeviceConfig = (model: string) => {
-    switch (model) {
-      case "phone_standard": return { width: '1170px', height: '2532px', topPadding: '480px', isTablet: false };
-      case "phone_flip": return { width: '1080px', height: '2640px', topPadding: '500px', isTablet: false };
-      case "phone_fold_out": return { width: '904px', height: '2316px', topPadding: '450px', isTablet: false };
-      case "tablet_ipad": return { width: '2732px', height: '2048px', topPadding: '160px', isTablet: true };
-      case "tablet_galaxy": return { width: '2560px', height: '1600px', topPadding: '160px', isTablet: true };
-      case "tablet_fold_in": return { width: '2176px', height: '1812px', topPadding: '160px', isTablet: true };
-      default: return { width: '1170px', height: '2532px', topPadding: '480px', isTablet: false };
-    }
-  };
-
-  const config = getDeviceConfig(deviceModel);
-  const is2Col = config.isTablet && tabletLayout === "2col";
-  
   let { width, height } = config;
   if (config.isTablet) {
     const w = parseInt(config.width);
