@@ -147,7 +147,7 @@ export const WallpaperRenderer = forwardRef<HTMLDivElement, Props>(({
               return (
                 <div
                   key={lecture.id}
-                  className={`m-[3px] rounded-[10px] border p-2 flex flex-col justify-center items-center text-center overflow-hidden shadow-sm
+                  className={`m-[3px] rounded-[10px] border p-1 flex flex-col justify-center items-center text-center overflow-hidden shadow-sm
                     ${getLectureColor(lecture)}
                     ${isInactive ? "opacity-50" : ""}
                   `}
@@ -157,31 +157,55 @@ export const WallpaperRenderer = forwardRef<HTMLDivElement, Props>(({
                     zIndex: 10
                   }}
                 >
-                  <div className="flex flex-col items-center justify-center w-full h-full overflow-hidden px-1">
-                    <p style={{ fontSize: `${titleSize}px` }} className="font-bold leading-tight break-keep">
-                      {titleText}
-                    </p>
-                    {lecture.professor && (
-                      <p style={{ fontSize: `${detailsSize}px` }} className="mt-1 opacity-90 font-medium">
-                        ({lecture.professor})
-                      </p>
-                    )}
-                    {lecture.assignable && (
-                      <div style={{ fontSize: `${detailsSize}px` }} className="mt-1.5 opacity-85 font-medium leading-tight text-center tracking-tight">
-                        {(() => {
-                          const allRows = group.flatMap(l => {
-                            const lAssignments = assignments.filter((a) => a.lectureId === l.id);
-                            return lAssignments.map(a => ({ a, lId: l.id }));
-                          });
-                          if (allRows.length === 0) return <span>미배정</span>;
-                          return allRows.map(({ a }, idx) => (
-                            <div key={idx} className={idx > 0 ? "mt-0.5" : ""}>초:{memberName(a.draftMemberId)} / 검:{memberName(a.proofMemberId)}</div>
-                          ));
-                        })()}
-                      </div>
+                  <div className="flex flex-col items-center justify-center w-full h-full px-0.5">
+                    {isShort ? (
+                      <>
+                        <p style={{ fontSize: `${titleSize}px` }} className="font-bold leading-tight break-keep line-clamp-2">
+                          {titleText} {lecture.professor && <span style={{ fontSize: `${detailsSize}px`, fontWeight: 'normal', opacity: 0.9 }}>({lecture.professor})</span>}
+                        </p>
+                        {lecture.assignable && (
+                          <div style={{ fontSize: `${detailsSize}px` }} className="mt-0.5 opacity-85 font-medium leading-tight text-center tracking-tight flex flex-wrap justify-center gap-x-1 gap-y-0.5">
+                            {(() => {
+                              const allRows = group.flatMap(l => {
+                                const lAssignments = assignments.filter((a) => a.lectureId === l.id);
+                                return lAssignments.map(a => ({ a, lId: l.id }));
+                              });
+                              if (allRows.length === 0) return <span>미배정</span>;
+                              return allRows.map(({ a }, idx) => (
+                                <div key={idx}>초:{memberName(a.draftMemberId)} / 검:{memberName(a.proofMemberId)}</div>
+                              ));
+                            })()}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <p style={{ fontSize: `${titleSize}px` }} className="font-bold leading-tight break-keep line-clamp-3">
+                          {titleText}
+                        </p>
+                        {lecture.professor && (
+                          <p style={{ fontSize: `${detailsSize}px` }} className="mt-0.5 opacity-90 font-medium">
+                            ({lecture.professor})
+                          </p>
+                        )}
+                        {lecture.assignable && (
+                          <div style={{ fontSize: `${detailsSize}px` }} className="mt-1 opacity-85 font-medium leading-tight text-center tracking-tight">
+                            {(() => {
+                              const allRows = group.flatMap(l => {
+                                const lAssignments = assignments.filter((a) => a.lectureId === l.id);
+                                return lAssignments.map(a => ({ a, lId: l.id }));
+                              });
+                              if (allRows.length === 0) return <span>미배정</span>;
+                              return allRows.map(({ a }, idx) => (
+                                <div key={idx} className={idx > 0 ? "mt-0.5" : ""}>초:{memberName(a.draftMemberId)} / 검:{memberName(a.proofMemberId)}</div>
+                              ));
+                            })()}
+                          </div>
+                        )}
+                      </>
                     )}
                     {lecture.status !== "scheduled" && (
-                      <span className="mt-1.5 inline-block rounded bg-black/10 px-1.5 py-0.5 text-[9px] font-bold uppercase">
+                      <span className="mt-1 inline-block rounded bg-black/10 px-1 py-0.5 text-[9px] font-bold uppercase">
                         {lecture.status}
                       </span>
                     )}
