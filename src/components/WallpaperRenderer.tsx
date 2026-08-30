@@ -169,7 +169,7 @@ export const WallpaperRenderer = forwardRef<HTMLDivElement, Props>(({
               if (textLen > 25) titleSize -= 2;
               
               let detailsSize = hideAssignees
-                ? (isShort ? 16 : 20)
+                ? Math.max(titleSize - 3, 12)
                 : (isShort ? 10 : 13);
               if (isSplit) detailsSize -= 1;
               if (group.length > 2) detailsSize -= 1;
