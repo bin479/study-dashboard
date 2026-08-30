@@ -112,16 +112,38 @@ export const WallpaperRenderer = forwardRef<HTMLDivElement, Props>(({
             const dayLecturesMap = week.days.find((d: any) => d[0] === dateStr);
             const dayLectures: Lecture[] = dayLecturesMap ? dayLecturesMap[1] : [];
             
-            return dayLectures.map(lecture => {
+            const notAbsorbed = dayLectures.filter((l) => l.status !== "shifted");
+            const groupedLectures = new Map<string, Lecture[]>();
+            notAbsorbed.forEach(l => {
+              const key = `${l.startTime}_${l.durationHours}`;
+              if (!groupedLectures.has(key)) groupedLectures.set(key, []);
+              groupedLectures.get(key)!.push(l);
+            });
+
+            return Array.from(groupedLectures.values()).map(group => {
+              const lecture = group[0];
+              const isSplit = group.length > 1;
               const startRow = lecture.startTime ? getTimeRow(lecture.startTime) : 2;
               const endRow = lecture.endTime ? getTimeRow(lecture.endTime) : startRow + lecture.durationHours;
-              const isInactive = lecture.status === "cancelled" || lecture.status === "shifted";
+              const isInactive = lecture.status === "cancelled";
               const actualEndRow = endRow > 11 ? 12 : endRow; 
-              
-              const as = assignments.filter((a) => a.lectureId === lecture.id);
               
               const isShort = (actualEndRow - startRow) <= 1;
               
+              const titleText = lecture.topic && lecture.topic !== lecture.subject 
+                ? (isSplit ? lecture.topic.replace(/\s*\(\d+팀 배정\)/, "") : lecture.topic)
+                : `${lecture.subject}${lecture.sessionNumber ? ` ${lecture.sessionNumber}번` : ""}`;
+                
+              const textLen = titleText.length;
+              let titleSize = isShort ? 14 : 18;
+              if (textLen > 12) titleSize -= 2;
+              if (textLen > 18) titleSize -= 2;
+              if (textLen > 25) titleSize -= 2;
+              
+              let detailsSize = isShort ? 10 : 13;
+              if (isSplit) detailsSize -= 1;
+              if (group.length > 2) detailsSize -= 1;
+
               return (
                 <div
                   key={lecture.id}
@@ -136,21 +158,26 @@ export const WallpaperRenderer = forwardRef<HTMLDivElement, Props>(({
                   }}
                 >
                   <div className="flex flex-col items-center justify-center w-full h-full overflow-hidden px-1">
-                    <p className={`${isShort ? 'text-[13px]' : 'text-[17px]'} font-bold leading-tight break-keep`}>
-                      {lecture.topic && lecture.topic !== lecture.subject 
-                        ? lecture.topic 
-                        : `${lecture.subject}${lecture.sessionNumber ? ` ${lecture.sessionNumber}번` : ""}`}
+                    <p style={{ fontSize: `${titleSize}px` }} className="font-bold leading-tight break-keep">
+                      {titleText}
                     </p>
                     {lecture.professor && (
-                      <p className={`${isShort ? 'text-[11px]' : 'text-[14px]'} mt-1 opacity-90 font-medium`}>
+                      <p style={{ fontSize: `${detailsSize}px` }} className="mt-1 opacity-90 font-medium">
                         ({lecture.professor})
                       </p>
                     )}
                     {lecture.assignable && (
-                      <div className={`${isShort ? 'text-[10px]' : 'text-[13px]'} mt-1.5 opacity-85 font-medium leading-tight text-center tracking-tight`}>
-                        {as.length === 0 ? <span>미배정</span> : as.map((a, idx) => (
-                          <div key={idx}>초:{memberName(a.draftMemberId)} / 검:{memberName(a.proofMemberId)}</div>
-                        ))}
+                      <div style={{ fontSize: `${detailsSize}px` }} className="mt-1.5 opacity-85 font-medium leading-tight text-center tracking-tight">
+                        {(() => {
+                          const allRows = group.flatMap(l => {
+                            const lAssignments = assignments.filter((a) => a.lectureId === l.id);
+                            return lAssignments.map(a => ({ a, lId: l.id }));
+                          });
+                          if (allRows.length === 0) return <span>미배정</span>;
+                          return allRows.map(({ a }, idx) => (
+                            <div key={idx} className={idx > 0 ? "mt-0.5" : ""}>초:{memberName(a.draftMemberId)} / 검:{memberName(a.proofMemberId)}</div>
+                          ));
+                        })()}
                       </div>
                     )}
                     {lecture.status !== "scheduled" && (
