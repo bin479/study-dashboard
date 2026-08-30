@@ -76,7 +76,7 @@ export function generateD1NoticeText(
     })
     .join("\n\n");
 
-  const footer = `초안기한: ${formatDateWithWeekday(targetDate, 1)} 오전 9시 (${rooms.draftRoom}으로)\n검안기한: 초안 업로드 이후 48시간 (${rooms.proofRoom}으로)\n\n※ 시간표를 변경하면 꼭 구글 스프레드 시트에 반영해주세요!`;
+  const footer = `초안기한: ${formatDateWithWeekday(targetDate, 1)} 오전 9시 (${rooms.draftRoom}으로)\n검안기한: 초안 업로드 이후 48시간 (${rooms.proofRoom}으로)`;
 
   if (lines.length === 0) {
     return `${header}\n\n배정된 강의가 없습니다.\n\n${footer}`;
