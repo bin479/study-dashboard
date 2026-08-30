@@ -1173,7 +1173,7 @@ export default function RestorationView() {
                       onClick={() => {
                         if (confirm("이 저장본을 삭제하시겠습니까?")) deleteRestorationState(state.id);
                       }}
-                      className="p-2 text-rose-300 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="p-2 text-rose-400 hover:text-rose-600 sm:text-rose-300 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
                     >
                       <Trash2 size={16} />
                     </button>
