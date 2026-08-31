@@ -29,7 +29,13 @@ const shortDate = formatShortDate;
 const WEEKDAYS = ["월", "화", "수", "목", "금"];
 
 function getLectureColor(lecture: Lecture, groupId: string | null) {
-  if (lecture.entryType === "exam") return "bg-yellow-300 text-slate-900 font-bold border-yellow-400";
+  if (lecture.entryType === "exam") {
+    const title = lecture.topic || lecture.subject;
+    if (title.includes("피드백") || title.includes("형성평가")) {
+      return "bg-yellow-100 text-yellow-900 font-bold border-yellow-300";
+    }
+    return "bg-yellow-300 text-slate-900 font-bold border-yellow-400";
+  }
   if (lecture.entryType === "holiday") return "bg-rose-100 text-rose-800 border-rose-200";
 
   if (lecture.subject === "법의학") return "bg-amber-400 text-slate-900 font-bold border-amber-500";
