@@ -33,8 +33,8 @@ export default function D1NoticeCard() {
   );
   const viewingGroup = STUDY_GROUPS.find((g) => g.id === viewingGroupId);
   const lines = useMemo(
-    () => buildD1NoticeLines(scopedLectures, assignments, members, tomorrow),
-    [scopedLectures, assignments, members, tomorrow]
+    () => buildD1NoticeLines(scopedLectures, lectures, assignments, members, tomorrow),
+    [scopedLectures, lectures, assignments, members, tomorrow]
   );
   const currentDraftRoom = viewingGroup
     ? noticeSettings.groupSettings[viewingGroup.id]?.draftRoom ?? `${viewingGroup.name} 톡방`
@@ -44,8 +44,8 @@ export default function D1NoticeCard() {
     : noticeSettings.proofRoom;
 
   const noticeText = useMemo(
-    () => generateD1NoticeText(scopedLectures, assignments, members, tomorrow, { ...noticeSettings, draftRoom: currentDraftRoom, proofRoom: currentProofRoom }),
-    [scopedLectures, assignments, members, tomorrow, noticeSettings, currentDraftRoom, currentProofRoom]
+    () => generateD1NoticeText(scopedLectures, lectures, assignments, members, tomorrow, { ...noticeSettings, draftRoom: currentDraftRoom, proofRoom: currentProofRoom }),
+    [scopedLectures, lectures, assignments, members, tomorrow, noticeSettings, currentDraftRoom, currentProofRoom]
   );
 
   const handleCopy = async () => {
@@ -149,12 +149,12 @@ export default function D1NoticeCard() {
             내일 배정된 강의가 없습니다.
           </p>
         )}
-        {lines.map(({ lecture, pairs, timeLabel, assignments: lectureAssignments }) => (
+        {lines.map(({ lecture, pairs, timeLabel, assignments: lectureAssignments, displayNumber }) => (
           <div key={lecture.id} className="rounded-xl bg-white/95 px-3 py-2.5 text-slate-800">
             <div className="flex flex-wrap items-center justify-between gap-1.5">
               <p className="text-sm font-semibold">
                 [{timeLabel}] {lecture.subject}
-                {lecture.sessionNumber && <span> {lecture.sessionNumber}번</span>} 학습부
+                {lecture.sessionNumber || displayNumber ? <span> {displayNumber || lecture.sessionNumber}번</span> : ""} 학습부
               </p>
               <div className="flex shrink-0 items-center gap-1.5">
                 {lecture.status !== "scheduled" && <StatusBadge status={lecture.status} />}

@@ -22,14 +22,32 @@ export interface D1NoticeLine {
   assignments: Assignment[];
   pairs: { draftName: string; proofName: string }[];
   timeLabel: string;
+  displayNumber?: number;
+}
+
+export function getLectureNumberMap(lectures: Lecture[]): Map<string, number> {
+  const map = new Map<string, number>();
+  const subjectCounters = new Map<string, number>();
+  const sorted = [...lectures]
+    .filter(l => l.assignable && l.status !== "cancelled" && l.status !== "shifted")
+    .sort((a, b) => a.date.localeCompare(b.date) || a.order - b.order);
+  for (const l of sorted) {
+    const current = subjectCounters.get(l.subject) || 0;
+    const next = current + 1;
+    subjectCounters.set(l.subject, next);
+    map.set(l.id, next);
+  }
+  return map;
 }
 
 export function buildD1NoticeLines(
   lectures: Lecture[],
+  allLectures: Lecture[], // Needed to calculate accurate global numbers
   assignments: Assignment[],
   members: Member[],
   targetDate: string
 ): D1NoticeLine[] {
+  const lectureNumberMap = getLectureNumberMap(allLectures);
   return lectures
     .filter((l) => l.date === targetDate && l.status !== "cancelled" && l.status !== "shifted")
     .sort((a, b) => a.order - b.order)
@@ -46,6 +64,7 @@ export function buildD1NoticeLines(
               }))
             : [{ draftName: "미배정", proofName: "미배정" }],
         timeLabel: formatTimeRange(lecture.startTime, lecture.endTime) ?? lecture.period,
+        displayNumber: lectureNumberMap.get(lecture.id),
       };
     });
 }
@@ -57,19 +76,20 @@ export interface NoticeRoomSettings {
 
 export function generateD1NoticeText(
   lectures: Lecture[],
+  allLectures: Lecture[],
   assignments: Assignment[],
   members: Member[],
   targetDate: string,
   rooms: NoticeRoomSettings
 ): string {
-  const lines = buildD1NoticeLines(lectures, assignments, members, targetDate);
+  const lines = buildD1NoticeLines(lectures, allLectures, assignments, members, targetDate);
   const header = `📍${formatDateWithWeekday(targetDate)} 학습부 작성 안내드립니다.📍`;
 
   const body = lines
     .map((l) => {
       const statusTag =
         l.lecture.status === "shortened" ? " (단축)" : l.lecture.status === "extended" ? " (연장)" : "";
-      const sessionTag = l.lecture.sessionNumber ? ` ${l.lecture.sessionNumber}번` : "";
+      const sessionTag = l.displayNumber ? ` ${l.displayNumber}번` : (l.lecture.sessionNumber ? ` ${l.lecture.sessionNumber}번` : "");
       const title = `[${l.timeLabel}] ${l.lecture.subject}${sessionTag} 학습부${statusTag}`;
       const pairLines = l.pairs.map((p) => `초안: ${p.draftName}\n검안: ${p.proofName}`).join("\n");
       return `${title}\n${pairLines}`;

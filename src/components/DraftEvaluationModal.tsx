@@ -25,6 +25,7 @@ export default function DraftEvaluationModal({ assignment, lecture, draftMemberN
   const [spreadsheetMissing, setSpreadsheetMissing] = useState<boolean>(false);
   const [marksChecked, setMarksChecked] = useState<boolean>(true);
 
+  const calculateAdjustment = () => {
     const isMajor1Hr = lecture.subjectType === "major" && lecture.durationHours === 1;
     const newBonus = isMajor1Hr ? 3.0 : 6.0;
 
