@@ -117,6 +117,23 @@ export default function ScoringView() {
     }
   }, [searchParams]);
 
+  const handleMarkDraftSubmitted = (assignmentId: string) => {
+    const overrideStr = window.prompt(
+      "제출 처리를 완료합니다.\n\n" +
+      "[지연 일수 수동 지정]\n" +
+      "정상 제출(0일 지연)이면 0, 1일 지연이면 1을 입력하세요.\n" +
+      "현재 시간을 기준으로 자동 채점하려면 빈칸 상태로 확인(또는 취소)을 누르세요."
+    );
+    let overrideDays: number | null = null;
+    if (overrideStr !== null && overrideStr.trim() !== "") {
+      const parsed = parseInt(overrideStr, 10);
+      if (!isNaN(parsed) && parsed >= 0) {
+        overrideDays = parsed;
+      }
+    }
+    markDraftSubmitted(assignmentId, undefined, overrideDays);
+  };
+
   const ExtraBonusEditor = ({ assignmentId, type, bonuses }: { assignmentId: string, type: "draft" | "proof", bonuses: { id: string, amount: number, reason: string }[] | undefined }) => {
     const [amount, setAmount] = useState(0.5);
     const [reason, setReason] = useState("");
@@ -526,7 +543,7 @@ export default function ScoringView() {
                         <div className="mt-2 flex flex-wrap items-center gap-2">
                           {assignment.draftStatus === "pending" || assignment.draftStatus === "shifted" ? (
                             <button
-                              onClick={() => markDraftSubmitted(assignment.id)}
+                              onClick={() => handleMarkDraftSubmitted(assignment.id)}
                               className="flex items-center gap-1 rounded-lg bg-indigo-600 px-2.5 py-1.5 text-xs font-medium text-white active:scale-95"
                             >
                               <CheckCircle2 size={13} /> 초안 제출 처리

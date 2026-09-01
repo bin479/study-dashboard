@@ -172,8 +172,8 @@ interface DashboardState {
     info: { subject?: string; professor?: string; startTime?: string; endTime?: string; sessionNumber?: string }
   ) => void;
 
-  markDraftSubmitted: (assignmentId: string, when?: string) => void;
-  markProofSubmitted: (assignmentId: string, when?: string) => void;
+  markDraftSubmitted: (assignmentId: string, when?: string, overrideDaysLate?: number | null) => void;
+  markProofSubmitted: (assignmentId: string, when?: string, overrideDaysLate?: number | null) => void;
   resetDraftSubmission: (assignmentId: string) => void;
   resetProofSubmission: (assignmentId: string) => void;
   toggleRecording: (assignmentId: string) => void;
@@ -478,24 +478,24 @@ export const useDashboardStore = create<DashboardState>()(
         syncRow("lectures", { id: lectureId, ...info });
       },
 
-      markDraftSubmitted: (assignmentId, when) => {
+      markDraftSubmitted: (assignmentId, when, overrideDaysLate) => {
         const draftSubmittedAt = when ?? new Date().toISOString();
         set((state) => ({
           assignments: state.assignments.map((a) =>
-            a.id === assignmentId ? { ...a, draftSubmittedAt, draftStatus: "submitted" } : a
+            a.id === assignmentId ? { ...a, draftSubmittedAt, draftStatus: "submitted", overrideDraftDaysLate: overrideDaysLate } : a
           ),
         }));
-        syncRow("assignments", { id: assignmentId, draftSubmittedAt, draftStatus: "submitted" });
+        syncRow("assignments", { id: assignmentId, draftSubmittedAt, draftStatus: "submitted", overrideDraftDaysLate: overrideDaysLate });
       },
 
-      markProofSubmitted: (assignmentId, when) => {
+      markProofSubmitted: (assignmentId, when, overrideDaysLate) => {
         const proofSubmittedAt = when ?? new Date().toISOString();
         set((state) => ({
           assignments: state.assignments.map((a) =>
-            a.id === assignmentId ? { ...a, proofSubmittedAt, proofStatus: "submitted" } : a
+            a.id === assignmentId ? { ...a, proofSubmittedAt, proofStatus: "submitted", overrideProofDaysLate: overrideDaysLate } : a
           ),
         }));
-        syncRow("assignments", { id: assignmentId, proofSubmittedAt, proofStatus: "submitted" });
+        syncRow("assignments", { id: assignmentId, proofSubmittedAt, proofStatus: "submitted", overrideProofDaysLate: overrideDaysLate });
       },
 
       resetDraftSubmission: (assignmentId) => {

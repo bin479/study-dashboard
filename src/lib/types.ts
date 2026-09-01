@@ -95,6 +95,8 @@ export interface Assignment {
   proofOverrideScore?: number | null; // 그룹장이 수동으로 입력한 검안 확정 점수
   draftScorePublished?: boolean; // 그룹장이 초안 채점 내역을 초안자에게 공개했는지
   proofScorePublished?: boolean; // 그룹장이 검안 채점 내역을 검안자에게 공개했는지
+  overrideDraftDaysLate?: number | null; // 수동으로 지정한 초안 지연 일수
+  overrideProofDaysLate?: number | null; // 수동으로 지정한 검안 지연 일수
 }
 
 export interface RestorationItem {

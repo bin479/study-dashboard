@@ -176,15 +176,21 @@ export function scoreAssignment(lecture: Lecture, assignment: Assignment): Assig
     proofBase = assignment.proofOverrideScore;
   }
 
-  const draftPenalty = draftSubmitted ? draftLatePenalty(lecture, draftSubmitted) : 0;
-  const proofPenalty = proofSubmitted ? proofLatePenalty(assignment.draftSubmittedAt, proofSubmitted) : 0;
-
   const draftDeadlineDate = draftDeadline(lecture);
-  const draftDaysLate = draftSubmitted ? Math.max(0, Math.ceil((draftSubmitted.getTime() - draftDeadlineDate.getTime()) / 86400000)) : 0;
-  const proofDaysLate =
+  let draftDaysLate = draftSubmitted ? Math.max(0, Math.ceil((draftSubmitted.getTime() - draftDeadlineDate.getTime()) / 86400000)) : 0;
+  if (assignment.overrideDraftDaysLate != null) {
+    draftDaysLate = assignment.overrideDraftDaysLate;
+  }
+  let proofDaysLate =
     assignment.draftSubmittedAt && proofSubmitted
       ? Math.max(0, Math.ceil((proofSubmitted.getTime() - proofDeadline(assignment.draftSubmittedAt).getTime()) / 86400000))
       : 0;
+  if (assignment.overrideProofDaysLate != null) {
+    proofDaysLate = assignment.overrideProofDaysLate;
+  }
+
+  const draftPenalty = draftSubmitted && draftDaysLate > 0 ? -(Math.pow(2, draftDaysLate) - 1) : 0;
+  const proofPenalty = proofSubmitted && proofDaysLate > 0 ? proofDaysLate * SCORING_RULES.proofLatePenaltyPerDay : 0;
 
   const bonus = assignment.bonusPoints || 0;
   const draftAdjustment = assignment.draftAdjustment || 0;
