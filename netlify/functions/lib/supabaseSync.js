@@ -44,7 +44,7 @@ async function syncLecturesToSupabase(incoming) {
     .map((l) => ({
       id: `asg_${l.id}`,
       lectureId: l.id,
-      draftMemberId: (function(){ if(l.draftName && !idByName.has(l.draftName)) { throw new Error('Unmatched draftName: [' + l.draftName + '] charCodes: ' + Array.from(l.draftName).map(c => c.charCodeAt(0)).join(',')); } return l.draftName ? idByName.get(l.draftName) ?? null : null; })(),
+      draftMemberId: l.draftName ? idByName.get(l.draftName) ?? null : null,
       proofMemberId: l.proofName ? idByName.get(l.proofName) ?? null : null,
     }));
 
@@ -74,4 +74,5 @@ async function syncLecturesToSupabase(incoming) {
 }
 
 module.exports = { syncLecturesToSupabase };
+
 
