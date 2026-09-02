@@ -42,8 +42,12 @@ export default function WallpaperModal({ onClose, weeks }: Props) {
         backgroundColor: "#f8fafc",
       });
 
+      // iOS/iPadOS/Mac 기기인지 확인 (안드로이드는 공유하기 창에 갤러리 저장 버튼이 없어 불편하므로 제외)
+      const isAppleDevice = /iPad|iPhone|iPod|Macintosh/i.test(navigator.userAgent) || 
+                            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
       let shared = false;
-      if (typeof navigator.share === "function") {
+      if (isAppleDevice && typeof navigator.share === "function") {
         try {
           const res = await fetch(dataUrl);
           const blob = await res.blob();
