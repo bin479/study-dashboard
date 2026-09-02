@@ -1,6 +1,6 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { toJpeg } from "html-to-image";
-import { Download, X } from "lucide-react";
+import { Download, X, Share } from "lucide-react";
 import { WallpaperRenderer } from "./WallpaperRenderer";
 import { useDashboardStore } from "@/lib/store";
 
@@ -20,10 +20,18 @@ export default function WallpaperModal({ onClose, weeks }: Props) {
   const [startWeekIndex, setStartWeekIndex] = useState(0);
   const [hideAssignees, setHideAssignees] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [generatedFile, setGeneratedFile] = useState<File | null>(null);
+  const [generatedDataUrl, setGeneratedDataUrl] = useState<string | null>(null);
+
+  // 설정이 바뀌면 생성된 파일 초기화
+  useEffect(() => {
+    setGeneratedFile(null);
+    setGeneratedDataUrl(null);
+  }, [deviceModel, tabletLayout, weeksCount, startWeekIndex, hideAssignees]);
 
   const wallpaperRef = useRef<HTMLDivElement>(null);
 
-  const handleDownload = async () => {
+  const handleGenerate = async () => {
     if (!wallpaperRef.current) return;
     try {
       setIsExporting(true);
@@ -33,15 +41,54 @@ export default function WallpaperModal({ onClose, weeks }: Props) {
         quality: 0.95,
         backgroundColor: "#f8fafc",
       });
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = `시간표_배경화면.jpg`;
-      a.click();
+
+      let shared = false;
+      if (typeof navigator.share === "function") {
+        try {
+          const res = await fetch(dataUrl);
+          const blob = await res.blob();
+          const file = new File([blob], "시간표_배경화면.jpg", { type: "image/jpeg" });
+          if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
+            setGeneratedFile(file);
+            setGeneratedDataUrl(dataUrl);
+            shared = true;
+          }
+        } catch (err) {
+          console.log("File creation error:", err);
+        }
+      }
+
+      // 공유 API가 안 통하거나 PC 환경인 경우 즉시 다운로드
+      if (!shared) {
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = `시간표_배경화면.jpg`;
+        a.click();
+      }
     } catch (e) {
       console.error(e);
       alert("배경화면 생성 중 오류가 발생했습니다.");
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleShare = async () => {
+    if (!generatedFile) return;
+    try {
+      await navigator.share({
+        files: [generatedFile],
+        title: "시간표 배경화면",
+      });
+    } catch (err) {
+      console.log("Share cancelled or failed:", err);
+      // 취소된 게 아니라 에러가 발생한 경우 폴백
+      if (err instanceof Error && err.name !== "AbortError" && generatedDataUrl) {
+        const a = document.createElement("a");
+        a.href = generatedDataUrl;
+        a.download = `시간표_배경화면.jpg`;
+        a.click();
+      }
     }
   };
 
@@ -136,11 +183,23 @@ export default function WallpaperModal({ onClose, weeks }: Props) {
 
         <div className="border-t border-slate-100 p-4">
           <button
-            onClick={handleDownload}
+            onClick={generatedFile ? handleShare : handleGenerate}
             disabled={isExporting}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white transition active:scale-95 disabled:opacity-50"
+            className={`flex w-full items-center justify-center gap-2 rounded-xl py-3 font-medium text-white transition-colors ${
+              generatedFile ? "bg-green-600 hover:bg-green-700" : "bg-indigo-600 hover:bg-indigo-700"
+            }`}
           >
-            {isExporting ? "이미지 생성 중..." : <><Download size={18} /> 고해상도 이미지 저장</>}
+            {isExporting ? (
+              "이미지 생성 중..."
+            ) : generatedFile ? (
+              <>
+                <Share size={18} /> 갤러리에 저장 (공유하기)
+              </>
+            ) : (
+              <>
+                <Download size={18} /> 고해상도 이미지 생성
+              </>
+            )}
           </button>
         </div>
       </div>
