@@ -1,29 +1,29 @@
-// <학습부배정표> 엑셀(.xlsx 바이트)을 파싱해서 강의+배정 목록을 만든다.
-// scripts/import_timetable.py + scripts/extract_assignments.py(스크래치패드)에서
-// 검증한 로직을 그대로 옮긴 것 — 파일 형식이 바뀌면 두 곳 다 같이 고쳐야 한다.
+// <?�습부배정?? ?��?(.xlsx 바이?????�싱?�서 강의+배정 목록??만든??
+// scripts/import_timetable.py + scripts/extract_assignments.py(?�크?�치?�드)?�서
+// 검증한 로직??그�?�???�� �????�일 ?�식??바뀌면 ??�???같이 고쳐???�다.
 //
-// 강의의 모양(과목/제목/교시/소요시간)은 <시간표> 시트를 정본으로 삼는다.
-// <학습부배정> 시트의 C~G열은 시간표를 수식으로 복사해온 것이라 값은 같지만,
-// 셀 병합(교시 합치기) 범위는 시간표와 다를 수 있어서(총대님이 보기 좋게 따로
-// 병합해둔 경우) 소요시간 계산에는 쓰면 안 된다 — <학습부배정>은 오직 I~M열의
-// 초안자/검안자 이름을 date+order로 매칭해 붙이는 용도로만 쓴다.
+// 강의??모양(과목/?�목/교시/?�요?�간)?� <?�간?? ?�트�??�본?�로 ?�는??
+// <?�습부배정> ?�트??C~G?��? ?�간?��? ?�식?�로 복사?�온 것이??값�? 같�?�?
+// ?� 병합(교시 ?�치�? 범위???�간?��? ?��? ???�어??총�??�이 보기 좋게 ?�로
+// 병합?�둔 경우) ?�요?�간 계산?�는 ?�면 ???�다 ??<?�습부배정>?� ?�직 I~M?�의
+// 초안??검?�자 ?�름??date+order�?매칭??붙이???�도로만 ?�다.
 
 const XLSX = require("xlsx");
 
-const HOLIDAYS = new Set(["추석", "한글날", "대체휴일", "성탄절", "신정", "개천절", "현충일"]);
+const HOLIDAYS = new Set(["추석", "?��???, "?�체휴??, "?�탄??, "?�정", "개천??, "?�충??]);
 const MEDICAL_INFORMATICS_KEYWORDS = [
-  "의료정보", "병원정보시스템", "진료의사결정시스템", "컴퓨터 기반 의학교육", "의료데이터베이스", "전자의무기록",
+  "?�료?�보", "병원?�보?�스??, "진료?�사결정?�스??, "컴퓨??기반 ?�학교육", "?�료?�이?�베?�스", "?�자?�무기록",
 ];
 const COURSE_ALIASES = {
-  "알레르기-류마티스": "알레르기-류마티스학",
-  "임상표현2(기침, 저혈압)": "임상표현2",
-  "근골격계학": "근골격학",
+  "?�레르기-류마?�스": "?�레르기-류마?�스??,
+  "?�상?�현2(기침, ?�?�압)": "?�상?�현2",
+  "근골격계??: "근골격학",
 };
 const KNOWN_COURSES = {
-  "혈액종양학": "major", "순환기학": "major", "호흡기학": "major", "생식의학": "major",
-  "알레르기-류마티스학": "major", "내분비학": "major", "신경계학": "major", "감각계학": "major",
-  "근골격학": "major", "PBL3": "minor", "법의학": "minor", "발열": "minor",
-  "의료정보학": "minor", "임상표현2": "minor", "공휴일": "minor",
+  "?�액종양??: "major", "?�환기학": "major", "?�흡기학": "major", "?�식?�학": "major",
+  "?�레르기-류마?�스??: "major", "?�분비학": "major", "?�경계학": "major", "감각계학": "major",
+  "근골격학": "major", "PBL3": "minor", "법의??: "minor", "발열": "minor",
+  "?�료?�보??: "minor", "?�상?�현2": "minor", "공휴??: "minor",
 };
 
 function norm(value) {
@@ -42,18 +42,18 @@ function normalizeCourse(name) {
 function classifyEntry(raw) {
   if (HOLIDAYS.has(raw)) return "holiday";
   if (raw.indexOf("KAMC") !== -1) return "exam";
-  if (/(총괄평가|피드백|과정형성평가)/.test(raw)) return "exam";
+  if (/(총괄?��?|?�드�?과정?�성?��?)/.test(raw)) return "exam";
   return "lecture";
 }
 
 function resolveCourse(raw, block) {
-  if (HOLIDAYS.has(raw)) return "공휴일";
+  if (HOLIDAYS.has(raw)) return "공휴??;
   if (raw.indexOf("PBL") === 0) return "PBL3";
-  if (raw === "법의학") return "법의학";
+  if (raw === "법의??) return "법의??;
   if (raw.indexOf("발열") === 0) return "발열";
-  if (MEDICAL_INFORMATICS_KEYWORDS.some((k) => raw.indexOf(k) !== -1)) return "의료정보학";
-  if (raw.indexOf("과정형성평가") === 0) return block ? normalizeCourse(block) : null;
-  const m = raw.match(/^(.+?)\s*(총괄평가|피드백)/);
+  if (MEDICAL_INFORMATICS_KEYWORDS.some((k) => raw.indexOf(k) !== -1)) return "?�료?�보??;
+  if (raw.indexOf("과정?�성?��?") === 0) return block ? normalizeCourse(block) : null;
+  const m = raw.match(/^(.+?)\s*(총괄?��?|?�드�?/);
   if (m) return normalizeCourse(m[1]);
   if (block) return normalizeCourse(block);
   return null;
@@ -73,9 +73,8 @@ function isoDate(y, m, d) {
 }
 
 /**
- * 수식으로 연결된 날짜 셀(예: =시간표!C3)은 SheetJS가 부동소수점 오차 때문에
- * 정확히 자정이 아닌 값(예: 8/31 00:00 대신 8/30 23:59:08)으로 파싱하기도 한다.
- * 하루(86400000ms) 단위로 반올림해서 오차를 제거한다.
+ * ?�식?�로 ?�결???�짜 ?�(?? =?�간??C3)?� SheetJS가 부?�소?�점 ?�차 ?�문?? * ?�확???�정???�닌 �??? 8/31 00:00 ?�??8/30 23:59:08)?�로 ?�싱?�기???�다.
+ * ?�루(86400000ms) ?�위�?반올림해???�차�??�거?�다.
  */
 function snapToUTCDay(date) {
   const dayMs = 86400000;
@@ -115,8 +114,7 @@ function loadSplitTitles(settingsSheet) {
   const maxRow = range.e.r + 1;
   const titles = new Set();
   for (let r = 3; r <= maxRow; r++) {
-    const n = norm(cellAt(settingsSheet, r, 20)); // T열
-    if (n) titles.add(n);
+    const n = norm(cellAt(settingsSheet, r, 20)); // T??    if (n) titles.add(n);
   }
   return titles;
 }
@@ -132,7 +130,7 @@ function loadMergeTitles(settingsSheet) {
   for (let r = 1; r <= 3; r++) {
     for (let c = 1; c <= maxCol; c++) {
       const v = norm(cellAt(settingsSheet, r, c));
-      if (v && v.indexOf("제외할 강의명") !== -1) {
+      if (v && v.indexOf("?�외??강의�?) !== -1) {
         targetCol = c;
         break;
       }
@@ -144,7 +142,7 @@ function loadMergeTitles(settingsSheet) {
   if (targetCol !== -1) {
     for (let r = 3; r <= maxRow; r++) {
       const n = norm(cellAt(settingsSheet, r, targetCol));
-      if (n && n.indexOf("제외할 강의명") === -1) {
+      if (n && n.indexOf("?�외??강의�?) === -1) {
         titles.add(n);
       }
     }
@@ -152,7 +150,7 @@ function loadMergeTitles(settingsSheet) {
   return titles;
 }
 
-/** 각 주차 헤더 행에서 C~G열(월~금) 날짜를 읽어 연도 보정까지 적용한다. */
+/** �?주차 ?�더 ?�에??C~G????�? ?�짜�??�어 ?�도 보정까�? ?�용?�다. */
 function readWeekDates(cell, headerRow) {
   const rawDates = {};
   for (let col = 3; col <= 8; col++) {
@@ -177,12 +175,12 @@ function readWeekDates(cell, headerRow) {
 
   const cm = dates[minCol];
   if (new Date(cm.y, cm.m - 1, cm.d).getDay() !== 1) {
-    throw new Error(`보정 후 첫 날짜 ${isoDate(cm.y, cm.m, cm.d)}가 월요일이 아닙니다.`);
+    throw new Error(`보정 ??�??�짜 ${isoDate(cm.y, cm.m, cm.d)}가 ?�요?�이 ?�닙?�다.`);
   }
   return dates;
 }
 
-/** <시간표> 시트 — 강의 모양의 정본. */
+/** <?�간?? ?�트 ??강의 모양???�본. */
 function parseTimetableSheet(sheet, splitTitles, mergeTitles) {
   const { anchorSpan, memberAnchor } = buildMergeMaps(sheet);
   const range = XLSX.utils.decode_range(sheet["!ref"]);
@@ -240,7 +238,7 @@ function parseTimetableSheet(sheet, splitTitles, mergeTitles) {
 
         const course = resolveCourse(raw, block);
         if (!course || !(course in KNOWN_COURSES)) {
-          throw new Error(`과목을 결정하지 못했습니다: ${isoDate(dates[col].y, dates[col].m, dates[col].d)} "${raw}" (block=${block})`);
+          throw new Error(`과목??결정?��? 못했?�니?? ${isoDate(dates[col].y, dates[col].m, dates[col].d)} "${raw}" (block=${block})`);
         }
 
         const entryType = classifyEntry(raw);
@@ -271,12 +269,10 @@ function parseTimetableSheet(sheet, splitTitles, mergeTitles) {
 
   records.sort((a, b) => (a.date === b.date ? a.order - b.order : a.date < b.date ? -1 : 1));
 
-  // <설정> R열에 지정된 "학습부 통합" 강의는 바로 앞 강의와 한 학습부로 합쳐진다.
-  // 앱 안의 수동 "합치기"(merge_next, scheduleActions.ts) 기능과 같은 모양을
-  // 내야 한다: 흡수되는 강의는 지우지 않고 status "shifted" + note를 달아
-  // 그대로 남기고(화면에 흐리게/SHIFTED 배지로 표시됨, 배정은 "미배정" 처리),
-  // 앞 강의 쪽엔 시간을 더하고 제목을 "A & B"로 합친다(과목명은 안 건드림 —
-  // scheduleActions.ts의 merge_next도 topic만 합치지 subject는 그대로 둔다).
+  // <?�정> R?�에 지?�된 "?�습부 ?�합" 강의??바로 ??강의?� ???�습부�??�쳐진다.
+  // ???�의 ?�동 "?�치�?(merge_next, scheduleActions.ts) 기능�?같�? 모양??  // ?�야 ?�다: ?�수?�는 강의??지?��? ?�고 status "shifted" + note�??�아
+  // 그�?�??�기�??�면???�리�?SHIFTED 배�?�??�시?? 배정?� "미배?? 처리),
+  // ??강의 쪽엔 ?�간???�하�??�목??"A & B"�??�친??과목명�? ??건드�???  // scheduleActions.ts??merge_next??topic�??�치지 subject??그�?�??�다).
   const mergedRecords = [];
   for (let i = 0; i < records.length; i++) {
     const r = records[i];
@@ -291,28 +287,28 @@ function parseTimetableSheet(sheet, splitTitles, mergeTitles) {
         const curTopic = r.topic && r.topic !== r.subject ? r.topic : r.subject;
         if (!prevTopic.includes(curTopic)) prev.topic = `${prevTopic} & ${curTopic}`;
         prev.durationHours += r.durationHours;
-        // 병합 대상이 바로 다음 교시가 아니라 떨어진 교시일 수도 있어서(예: 1교시 +
-        // 3교시), endTime을 r의 실제 끝 시각이 아니라 prev.startTime + 합산
-        // durationHours로 다시 계산한다 — 그래야 실제 소요시간과 화면 표시가 맞는다.
+        // 병합 ?�?�이 바로 ?�음 교시가 ?�니???�어�?교시???�도 ?�어???? 1교시 +
+        // 3교시), endTime??r???�제 ???�각???�니??prev.startTime + ?�산
+        // durationHours�??�시 계산?�다 ??그래???�제 ?�요?�간�??�면 ?�시가 맞는??
         const [startHour, startMin] = prev.startTime.split(":");
         prev.endTime = `${pad2(parseInt(startHour, 10) + prev.durationHours)}:${startMin}`;
         const lastOrder = r.order + r.durationHours - 1;
         prev.period = lastOrder === prev.order ? `${prev.order}교시` : `${prev.order}~${lastOrder}교시`;
 
         r.shifted = true;
-        r.note = `${prev.period}로 병합됨`;
+        r.note = `${prev.period}�?병합??;
       }
     }
     mergedRecords.push(r);
   }
 
-  // <설정> T열에 지정된 "학습부 분할" 강의는 팀 2개(4명)이므로 강의 자체를 복제한다.
+  // <?�정> T?�에 지?�된 "?�습부 분할" 강의???� 2�?4�??��?�?강의 ?�체�?복제?�다.
   const expanded = [];
   mergedRecords.forEach((r) => {
     if (r.split && r.assignable) {
       [1, 2].forEach((team) => {
         const clone = Object.assign({}, r);
-        clone.topic = `${r.topic} (${team}팀 배정)`;
+        clone.topic = `${r.topic} (${team}?� 배정)`;
         clone.team = team;
         expanded.push(clone);
       });
@@ -330,7 +326,7 @@ function parseTimetableSheet(sheet, splitTitles, mergeTitles) {
     }
   });
 
-  // 결정적 id — src/lib/mockData.ts generateLectures()와 반드시 같은 규칙.
+  // 결정??id ??src/lib/mockData.ts generateLectures()?� 반드??같�? 규칙.
   const seen = {};
   records.forEach((r) => {
     const key = `${r.date}_${r.order}`;
@@ -343,9 +339,8 @@ function parseTimetableSheet(sheet, splitTitles, mergeTitles) {
 }
 
 /**
- * <학습부배정> 시트 — 오직 I~M열(초안자/검안자 이름)만 읽는다. C~G열은 date+order를
- * 찾는 키로만 쓰고, 이 시트 자체의 셀 병합 범위(소요시간)는 신뢰하지 않는다.
- * "통합"(짧은 두 교시가 한 팀으로 배정)은 I~M열 자체가 병합돼 있으므로 그 앵커를 따라간다.
+ * <?�습부배정> ?�트 ???�직 I~M??초안??검?�자 ?�름)�??�는?? C~G?��? date+order�? * 찾는 ?�로�??�고, ???�트 ?�체???� 병합 범위(?�요?�간)???�뢰?��? ?�는??
+ * "?�합"(짧�? ??교시가 ???�?�로 배정)?� I~M???�체가 병합???�으므�?�??�커�??�라간다.
  */
 function parseAssignmentPairs(sheet) {
   const { memberAnchor } = buildMergeMaps(sheet);
@@ -359,7 +354,7 @@ function parseAssignmentPairs(sheet) {
   }
   weekHeaderRows.push(maxRow + 1);
 
-  // key `${date}_${order}` -> pairs 배열 (분할 강의는 pair가 2개)
+  // key `${date}_${order}` -> pairs 배열 (분할 강의??pair가 2�?
   const byKey = new Map();
 
   for (let idx = 0; idx < weekHeaderRows.length - 1; idx++) {
@@ -378,20 +373,20 @@ function parseAssignmentPairs(sheet) {
       for (let col = 3; col <= 8; col++) {
         if (!dates[col]) continue;
         const raw = norm(cell(row, col));
-        if (!raw) continue; // 실제 강의가 있는 칸만(평가/공휴일 포함 — 어차피 assignable만 나중에 씀)
+        if (!raw) continue; // ?�제 강의가 ?�는 칸만(?��?/공휴???�함 ???�차??assignable�??�중???�)
 
         const asgKey = memberAnchor[`${row}_${col + 6}`] || `${row}_${col + 6}`;
         const [asgRowStr, asgColStr] = asgKey.split("_");
         const asgRaw = cell(parseInt(asgRowStr, 10), parseInt(asgColStr, 10));
-        const names = String(asgRaw || "").split("\n").map((s) => s.trim()).filter(Boolean);
+        const names = String(asgRaw || "").split("\n").map((s) => s.replace(/[^��-�R]/g, '')).filter(Boolean);
         const pairs = [];
         for (let i = 0; i + 1 < names.length; i += 2) pairs.push([names[i], names[i + 1]]);
         if (pairs.length === 0) continue;
 
         const key = `${isoDate(dates[col].y, dates[col].m, dates[col].d)}_${order}`;
         const arr = byKey.get(key) ?? [];
-        // 같은 (date,order)에 이미 항목이 있으면(같은 병합 영역 안의 다른 요일 칸을
-        // 중복으로 다시 읽는 경우는 없지만, 방어적으로) 합치지 않고 그대로 둔다.
+        // 같�? (date,order)???��? ??��???�으�?같�? 병합 ?�역 ?�의 ?�른 ?�일 칸을
+        // 중복?�로 ?�시 ?�는 경우???��?�? 방어?�으�? ?�치지 ?�고 그�?�??�다.
         if (arr.length === 0) byKey.set(key, pairs);
       }
     }
@@ -400,25 +395,24 @@ function parseAssignmentPairs(sheet) {
   return byKey;
 }
 
-/** xlsx 바이트(Buffer) -> 강의 레코드 배열 (draftName/proofName 포함). */
+/** xlsx 바이??Buffer) -> 강의 ?�코??배열 (draftName/proofName ?�함). */
 function parseWorkbook(buffer) {
   const wb = XLSX.read(buffer, { type: "buffer", cellDates: true });
-  const timetableSheet = wb.Sheets["시간표"];
-  const assignmentSheet = wb.Sheets["학습부배정"];
-  if (!timetableSheet) throw new Error("<시간표> 시트를 찾을 수 없습니다.");
-  if (!assignmentSheet) throw new Error("<학습부배정> 시트를 찾을 수 없습니다.");
+  const timetableSheet = wb.Sheets["?�간??];
+  const assignmentSheet = wb.Sheets["?�습부배정"];
+  if (!timetableSheet) throw new Error("<?�간?? ?�트�?찾을 ???�습?�다.");
+  if (!assignmentSheet) throw new Error("<?�습부배정> ?�트�?찾을 ???�습?�다.");
 
-  const splitTitles = loadSplitTitles(wb.Sheets["설정"]);
-  const mergeTitles = loadMergeTitles(wb.Sheets["설정"]);
+  const splitTitles = loadSplitTitles(wb.Sheets["?�정"]);
+  const mergeTitles = loadMergeTitles(wb.Sheets["?�정"]);
   const lectures = parseTimetableSheet(timetableSheet, splitTitles, mergeTitles);
   const pairsByKey = parseAssignmentPairs(assignmentSheet);
 
-  // 분할 강의(팀 2개)는 같은 date+order로 lecture 레코드가 2개 나오므로,
-  // 같은 키의 pairs 배열을 등장 순서대로 하나씩 소비한다.
+  // 분할 강의(?� 2�???같�? date+order�?lecture ?�코?��? 2�??�오므�?
+  // 같�? ?�의 pairs 배열???�장 ?�서?��??�나???�비?�다.
   const cursor = new Map();
   lectures.forEach((r) => {
-    // 흡수된(shifted) 강의는 원래 자기 팀이 있었더라도 병합된 강의 쪽으로
-    // 흡수됐다고 보고 "미배정" 처리한다 — scheduleActions.ts의 merge_next와 동일.
+    // ?�수??shifted) 강의???�래 ?�기 ?�???�었?�라??병합??강의 쪽으�?    // ?�수?�다�?보고 "미배?? 처리?�다 ??scheduleActions.ts??merge_next?� ?�일.
     if (!r.assignable || r.shifted) {
       r.draftName = null;
       r.proofName = null;
@@ -460,3 +454,4 @@ function buildPayload(records) {
 }
 
 module.exports = { parseWorkbook, buildPayload };
+
