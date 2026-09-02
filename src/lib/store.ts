@@ -481,21 +481,39 @@ export const useDashboardStore = create<DashboardState>()(
       markDraftSubmitted: (assignmentId, when, overrideDaysLate) => {
         const draftSubmittedAt = when ?? new Date().toISOString();
         set((state) => ({
-          assignments: state.assignments.map((a) =>
-            a.id === assignmentId ? { ...a, draftSubmittedAt, draftStatus: "submitted", overrideDraftDaysLate: overrideDaysLate } : a
-          ),
+          assignments: state.assignments.map((a) => {
+            if (a.id === assignmentId) {
+              const bonuses = (a.extraBonusesDraft || []).filter((b) => b.id !== "OVERRIDE_DELAY");
+              if (overrideDaysLate != null) {
+                bonuses.push({ id: "OVERRIDE_DELAY", amount: overrideDaysLate, reason: "OVERRIDE_DELAY" });
+              }
+              return { ...a, draftSubmittedAt, draftStatus: "submitted", extraBonusesDraft: bonuses };
+            }
+            return a;
+          }),
         }));
-        syncRow("assignments", { id: assignmentId, draftSubmittedAt, draftStatus: "submitted", overrideDraftDaysLate: overrideDaysLate });
+        const state = get();
+        const a = state.assignments.find((x) => x.id === assignmentId);
+        if (a) syncRow("assignments", { id: assignmentId, draftSubmittedAt, draftStatus: "submitted", extraBonusesDraft: a.extraBonusesDraft });
       },
 
       markProofSubmitted: (assignmentId, when, overrideDaysLate) => {
         const proofSubmittedAt = when ?? new Date().toISOString();
         set((state) => ({
-          assignments: state.assignments.map((a) =>
-            a.id === assignmentId ? { ...a, proofSubmittedAt, proofStatus: "submitted", overrideProofDaysLate: overrideDaysLate } : a
-          ),
+          assignments: state.assignments.map((a) => {
+            if (a.id === assignmentId) {
+              const bonuses = (a.extraBonusesProof || []).filter((b) => b.id !== "OVERRIDE_DELAY");
+              if (overrideDaysLate != null) {
+                bonuses.push({ id: "OVERRIDE_DELAY", amount: overrideDaysLate, reason: "OVERRIDE_DELAY" });
+              }
+              return { ...a, proofSubmittedAt, proofStatus: "submitted", extraBonusesProof: bonuses };
+            }
+            return a;
+          }),
         }));
-        syncRow("assignments", { id: assignmentId, proofSubmittedAt, proofStatus: "submitted", overrideProofDaysLate: overrideDaysLate });
+        const state = get();
+        const a = state.assignments.find((x) => x.id === assignmentId);
+        if (a) syncRow("assignments", { id: assignmentId, proofSubmittedAt, proofStatus: "submitted", extraBonusesProof: a.extraBonusesProof });
       },
 
       resetDraftSubmission: (assignmentId) => {

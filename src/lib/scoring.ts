@@ -178,15 +178,17 @@ export function scoreAssignment(lecture: Lecture, assignment: Assignment): Assig
 
   const draftDeadlineDate = draftDeadline(lecture);
   let draftDaysLate = draftSubmitted ? Math.max(0, Math.ceil((draftSubmitted.getTime() - draftDeadlineDate.getTime()) / 86400000)) : 0;
-  if (assignment.overrideDraftDaysLate != null) {
-    draftDaysLate = assignment.overrideDraftDaysLate;
+  const draftOverrideBonus = (assignment.extraBonusesDraft || []).find((b) => b.id === "OVERRIDE_DELAY");
+  if (draftOverrideBonus) {
+    draftDaysLate = draftOverrideBonus.amount;
   }
   let proofDaysLate =
     assignment.draftSubmittedAt && proofSubmitted
       ? Math.max(0, Math.ceil((proofSubmitted.getTime() - proofDeadline(assignment.draftSubmittedAt).getTime()) / 86400000))
       : 0;
-  if (assignment.overrideProofDaysLate != null) {
-    proofDaysLate = assignment.overrideProofDaysLate;
+  const proofOverrideBonus = (assignment.extraBonusesProof || []).find((b) => b.id === "OVERRIDE_DELAY");
+  if (proofOverrideBonus) {
+    proofDaysLate = proofOverrideBonus.amount;
   }
 
   const draftPenalty = draftSubmitted && draftDaysLate > 0 ? -(Math.pow(2, draftDaysLate) - 1) : 0;
@@ -196,8 +198,8 @@ export function scoreAssignment(lecture: Lecture, assignment: Assignment): Assig
   const draftAdjustment = assignment.draftAdjustment || 0;
   const proofAdjustment = assignment.proofAdjustment || 0;
   
-  const extraBonusesDraftTotal = (assignment.extraBonusesDraft || []).reduce((sum, b) => sum + b.amount, 0);
-  const extraBonusesProofTotal = (assignment.extraBonusesProof || []).reduce((sum, b) => sum + b.amount, 0);
+  const extraBonusesDraftTotal = (assignment.extraBonusesDraft || []).filter(b => b.id !== "OVERRIDE_DELAY").reduce((sum, b) => sum + b.amount, 0);
+  const extraBonusesProofTotal = (assignment.extraBonusesProof || []).filter(b => b.id !== "OVERRIDE_DELAY").reduce((sum, b) => sum + b.amount, 0);
 
   const draftTotal = draftBase + draftPenalty + draftAdjustment + extraBonusesDraftTotal;
   const proofTotal = proofBase + proofPenalty + proofAdjustment + bonus + extraBonusesProofTotal;
