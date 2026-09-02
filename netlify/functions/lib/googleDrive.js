@@ -1,20 +1,19 @@
-// 구글 서비스 계정으로 (뷰어 권한만 있는) 드라이브 파일의 원본 바이트를 내려받는다.
-// 파일이 진짜 구글시트가 아니라 업로드된 xlsx 그대로라도(호환 모드) 동작한다 —
-// Drive API의 alt=media는 저장된 원본 바이트를 그대로 스트리밍해줄 뿐,
-// 별도 변환이 필요 없기 때문이다.
+// 구�? ?�비??계정?�로 (뷰어 권한�??�는) ?�라?�브 ?�일???�본 바이?��? ?�려받는??
+// ?�일??진짜 구�??�트가 ?�니???�로?�된 xlsx 그�?로라???�환 모드) ?�작?�다 ??// Drive API??alt=media???�?�된 ?�본 바이?��? 그�?�??�트리밍?�줄 �?
+// 별도 변?�이 ?�요 ?�기 ?�문?�다.
 
 const { JWT } = require("google-auth-library");
 
 async function downloadXlsx(fileId) {
   const raw = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
-  if (!raw) throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY 환경변수가 설정되지 않았습니다.");
-  if (!fileId) throw new Error("GOOGLE_DRIVE_FILE_ID 환경변수가 설정되지 않았습니다.");
+  if (!raw) throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY ?�경변?��? ?�정?��? ?�았?�니??");
+  if (!fileId) throw new Error("GOOGLE_DRIVE_FILE_ID ?�경변?��? ?�정?��? ?�았?�니??");
 
   let key;
   try {
     key = JSON.parse(raw);
   } catch {
-    throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY가 올바른 JSON이 아닙니다.");
+    throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY가 ?�바�?JSON???�닙?�다.");
   }
 
   const client = new JWT({
@@ -32,3 +31,5 @@ async function downloadXlsx(fileId) {
 }
 
 module.exports = { downloadXlsx };
+
+
