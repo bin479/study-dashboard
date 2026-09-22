@@ -49,7 +49,7 @@ function classifyEntry(raw) {
 function resolveCourse(raw, block) {
   if (HOLIDAYS.has(raw)) return "공휴일";
   if (raw.indexOf("PBL") === 0) return "PBL3";
-  if (raw === "법의학") return "법의학";
+  if (raw.indexOf("법의학") === 0) return "법의학";
   if (raw.indexOf("발열") === 0) return "발열";
   if (MEDICAL_INFORMATICS_KEYWORDS.some((k) => raw.indexOf(k) !== -1)) return "의료정보학";
   if (raw.indexOf("과정형성평가") === 0) return block ? normalizeCourse(block) : null;
