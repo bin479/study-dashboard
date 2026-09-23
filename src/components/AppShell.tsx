@@ -24,6 +24,7 @@ const DESKTOP_NAV_ITEMS = [
   { href: "/restoration", label: "복원", icon: ClipboardList },
   { href: "/roster", label: "멤버", icon: Users },
   { href: "/settlement", label: "정산", icon: Calculator },
+  { href: "/more", label: "더보기", icon: MoreHorizontal },
 ];
 
 const MOBILE_NAV_ITEMS = [
@@ -97,21 +98,20 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
   const mobileNav = useMemo(() => {
     let items = MOBILE_NAV_ITEMS;
-    // 성민수만 볼 수 있으므로 더보기 탭 내에 피드백이 있음 (MoreView.tsx)
-    // 모바일은 더보기 탭이 이미 있으므로 따로 안 빼도 됨
+    
     if (adminMode && canUseAdminMode) return items;
     
     if (currentMemberRole === "lead") {
       return items;
     }
     if (currentMemberRole === "subjectHead") {
-      return items.filter(item => item.href !== "/more" && item.href !== "/restoration");
+      return items.filter(item => item.href !== "/restoration");
     }
     if (currentMemberName === "김정후") {
       return items.filter(item => item.href !== "/scoring" && item.href !== "/restoration");
     }
     
-    return items.filter(item => item.href !== "/scoring" && item.href !== "/restoration" && item.href !== "/more");
+    return items.filter(item => item.href !== "/scoring" && item.href !== "/restoration");
   }, [adminMode, canUseAdminMode, currentMemberRole, currentMemberName]);
 
   return (
