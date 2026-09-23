@@ -17,7 +17,7 @@ const ADMIN_LINKS = [
 ];
 
 const CALENDAR_LINK = {
-  href: "webcal://study-dashboard.netlify.app/.netlify/functions/calendar",
+  href: "webcal://scintillating-squirrel-a5c828.netlify.app/.netlify/functions/calendar",
   label: "스마트폰 캘린더 연동 (구독)",
   description: "잠금화면/위젯에서 시간표 확인 (iOS/Android)",
   icon: CalendarDays,
