@@ -35,7 +35,7 @@ export default function MoreView() {
   const canUseAdminMode = currentMemberName === "한상희" || currentMemberName === "성민수";
 
   const availableLinks = useMemo(() => {
-    let base = [];
+    let base: any[] = [];
     if (adminMode && canUseAdminMode) {
       base = currentMemberName === "성민수" ? ADMIN_LINKS : LINKS;
     } else if (currentMemberRole === "lead" || currentMemberName === "김정후") {
