@@ -1,8 +1,7 @@
 import { ImageResponse } from 'next/og';
 import { createClient } from '@supabase/supabase-js';
 
-// We use the edge runtime for next/og
-export const runtime = 'edge';
+// Using default Node.js runtime for stability on Netlify
 
 function getMonday(d: Date) {
   const date = new Date(d);
