@@ -10,6 +10,7 @@
     "seed:supabase": "tsx scripts/seed-supabase.ts"
   },
   "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@supabase/supabase-js": "^2.112.4",
     "date-fns": "^4.4.0",
     "google-auth-library": "^11.0.2",
@@ -19,6 +20,7 @@
     "papaparse": "^5.7.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "satori": "^0.33.5",
     "web-push": "^3.6.7",
     "xlsx": "^0.18.5",
     "zustand": "^5.0.15"
