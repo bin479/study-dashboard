@@ -2,6 +2,9 @@
   command = "npm run build"
   functions = "netlify/functions"
 
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
 # xlsx 호환 모드 시트(Apps Script를 못 붙이는 경우)를 위한 주기적 동기화 — 5분마다.
 [functions."sheet-sync-scheduled"]
   schedule = "*/5 * * * *"
