@@ -30,12 +30,28 @@ function generateIcs(lectures) {
     if (!l.startTime || !l.endTime) continue;
     if (l.status === "shifted") continue;
 
-    const dateStr = l.date.replace(/-/g, ""); // YYYYMMDD
-    const startStr = l.startTime.replace(/:/g, "") + "00";
-    const endStr = l.endTime.replace(/:/g, "") + "00";
+    const kstStart = new Date(`${l.date}T${l.startTime}:00+09:00`);
+    const kstEnd = new Date(`${l.date}T${l.endTime}:00+09:00`);
 
-    const dtstart = dateStr + "T" + startStr;
-    const dtend = dateStr + "T" + endStr;
+    const dtstart =
+      kstStart.getUTCFullYear() +
+      pad2(kstStart.getUTCMonth() + 1) +
+      pad2(kstStart.getUTCDate()) +
+      "T" +
+      pad2(kstStart.getUTCHours()) +
+      pad2(kstStart.getUTCMinutes()) +
+      pad2(kstStart.getUTCSeconds()) +
+      "Z";
+
+    const dtend =
+      kstEnd.getUTCFullYear() +
+      pad2(kstEnd.getUTCMonth() + 1) +
+      pad2(kstEnd.getUTCDate()) +
+      "T" +
+      pad2(kstEnd.getUTCHours()) +
+      pad2(kstEnd.getUTCMinutes()) +
+      pad2(kstEnd.getUTCSeconds()) +
+      "Z";
 
     const summary = `[${l.subject}] ${l.topic || ""}${l.professor ? ` (${l.professor})` : ""}`;
     let description = `${l.period}`;
@@ -45,8 +61,8 @@ function generateIcs(lectures) {
       "BEGIN:VEVENT",
       `UID:${l.id}@study-dashboard`,
       `DTSTAMP:${dtstamp}`,
-      `DTSTART;TZID=Asia/Seoul:${dtstart}`,
-      `DTEND;TZID=Asia/Seoul:${dtend}`,
+      `DTSTART:${dtstart}`,
+      `DTEND:${dtend}`,
       `SUMMARY:${summary}`,
       `DESCRIPTION:${description}`,
       "END:VEVENT"
