@@ -135,23 +135,8 @@ export async function GET() {
       });
     }
 
-    // 폰트 로드
-    let fontBuffer: ArrayBuffer | null = null;
-    try {
-      const fontPath = require.resolve('@fontsource/noto-sans-kr/files/noto-sans-kr-korean-400-normal.woff2');
-      const fs = require('fs');
-      fontBuffer = fs.readFileSync(fontPath);
-      console.log('Font loaded, size:', fontBuffer ? (fontBuffer as ArrayBuffer).byteLength : 0);
-    } catch {
-      try {
-        const fontPath = require.resolve('@fontsource/noto-sans-kr/files/noto-sans-kr-latin-400-normal.woff2');
-        const fs = require('fs');
-        fontBuffer = fs.readFileSync(fontPath);
-        console.log('Font (latin) loaded');
-      } catch (err2) {
-        console.warn('Font load failed:', err2);
-      }
-    }
+    // Font loading disabled for Netlify (system font fallback)
+let fontBuffer: ArrayBuffer | null = null;
 
     // 시간표 그리드 전체 높이 계산
     const GRID_H = 4 * ROW_H + LUNCH_H + 4 * ROW_H; // 교시1~4 + 점심 + 교시5~8
@@ -409,7 +394,7 @@ export async function GET() {
             height: '100%',
             backgroundColor: '#0d1117',
             color: 'white',
-            fontFamily: '"Noto Sans KR", sans-serif',
+            fontFamily: 'system-ui, sans-serif',
             padding: '40px 30px 30px 30px',
             gap: 24,
           }}
