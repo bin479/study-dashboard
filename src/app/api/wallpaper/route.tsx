@@ -82,15 +82,15 @@ export async function GET(request: Request) {
       });
     }
 
-    // Load local font file
+    // Load local Noto Sans KR OTF font
     let fontBuffer: ArrayBuffer | null = null;
     try {
       const fs = require('fs');
       const path = require('path');
-      const fontPath = path.join(process.cwd(), 'public', 'Pretendard.ttf');
+      const fontPath = path.join(process.cwd(), 'public', 'NotoSansKR.otf');
       fontBuffer = fs.readFileSync(fontPath);
     } catch (err) {
-      console.error('Failed to load local font:', err);
+      console.error('Failed to load NotoSansKR.otf font:', err);
     }
 
     const renderDay = (date: string, dayLectures: any[]) => {
