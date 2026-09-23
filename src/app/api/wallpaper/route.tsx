@@ -38,12 +38,29 @@ export async function GET(request: Request) {
       now.setDate(now.getDate() + (now.getDay() === 0 ? 1 : 2));
     }
 
-    const monday = getMonday(now);
-    const friday = new Date(monday);
-    friday.setDate(friday.getDate() + 4);
+    const w1 = getMonday(now);
+    const w2 = new Date(w1);
+    w2.setDate(w2.getDate() + 7);
 
-    const startStr = formatDate(monday);
-    const endStr = formatDate(friday);
+    const week1Dates: string[] = [];
+    for (let i = 0; i < 5; i++) {
+      const d = new Date(w1);
+      d.setDate(d.getDate() + i);
+      week1Dates.push(formatDate(d));
+    }
+    const week2Dates: string[] = [];
+    for (let i = 0; i < 5; i++) {
+      const d = new Date(w2);
+      d.setDate(d.getDate() + i);
+      week2Dates.push(formatDate(d));
+    }
+
+    const allDates = [...week1Dates, ...week2Dates];
+    const grouped: Record<string, any[]> = {};
+    allDates.forEach(d => (grouped[d] = []));
+
+    const startStr = week1Dates[0];
+    const endStr = week2Dates[4];
 
     const { data: lectures, error } = await supabase
       .from('lectures')
@@ -58,14 +75,6 @@ export async function GET(request: Request) {
       return new Response('Database error', { status: 500 });
     }
 
-    // Group lectures by date
-    const grouped: Record<string, any[]> = {};
-    for (let i = 0; i < 5; i++) {
-      const d = new Date(monday);
-      d.setDate(d.getDate() + i);
-      grouped[formatDate(d)] = [];
-    }
-
     if (lectures) {
       lectures.forEach((l) => {
         if (grouped[l.date]) {
@@ -73,8 +82,6 @@ export async function GET(request: Request) {
         }
       });
     }
-
-    const dates = Object.keys(grouped).sort();
 
     // Fetch Korean Font (Noto Sans KR) dynamically
     let fontBuffer: ArrayBuffer | null = null;
@@ -84,6 +91,70 @@ export async function GET(request: Request) {
     } catch (err) {
       console.error('Failed to load font:', err);
     }
+
+    const renderDay = (date: string, dayLectures: any[]) => {
+      const d = new Date(date);
+      const dayName = DAY_NAMES[d.getDay()];
+
+      return (
+        <div
+          key={date}
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            borderRadius: '16px',
+            padding: '16px',
+            borderLeft: '6px solid #6366f1',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              width: '70px',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRight: '2px solid rgba(255,255,255,0.1)',
+              marginRight: '16px',
+              paddingRight: '16px',
+            }}
+          >
+            <span style={{ fontSize: 28, fontWeight: 'bold' }}>{dayName}</span>
+            <span style={{ fontSize: 16, color: '#94a3b8', marginTop: 6 }}>
+              {date.substring(5).replace('-', '/')}
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '10px' }}>
+            {dayLectures.length === 0 ? (
+              <div style={{ display: 'flex', fontSize: 20, color: '#64748b', alignItems: 'center', height: '100%' }}>
+                일정 없음
+              </div>
+            ) : (
+              dayLectures.map((l, i) => (
+                <div key={i} style={{ display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end', gap: '10px' }}>
+                    <span style={{ fontSize: 22, fontWeight: 'bold', color: '#e2e8f0' }}>
+                      {l.subject}
+                    </span>
+                    {l.professor && (
+                      <span style={{ fontSize: 18, color: '#94a3b8', marginBottom: '2px' }}>
+                        {l.professor}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'row', marginTop: '4px', fontSize: 18, color: '#cbd5e1', gap: '10px' }}>
+                    <span style={{ color: '#818cf8' }}>{l.period}</span>
+                    {l.topic && <span>• {l.topic}</span>}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      );
+    };
 
     return new ImageResponse(
       (
@@ -106,92 +177,34 @@ export async function GET(request: Request) {
             style={{
               display: 'flex',
               flexDirection: 'column',
-              padding: '60px 40px',
+              padding: '40px',
               height: '1420px',
             }}
           >
             <div
               style={{
                 display: 'flex',
-                fontSize: 48,
+                fontSize: 40,
                 fontWeight: 'bold',
                 color: '#818cf8',
-                marginBottom: 40,
+                marginBottom: 30,
                 alignItems: 'center',
                 justifyContent: 'space-between'
               }}
             >
-              <span>주간 시간표</span>
-              <span style={{ fontSize: 32, color: '#94a3b8', fontWeight: 'normal' }}>
+              <span>주간 시간표 (2주)</span>
+              <span style={{ fontSize: 28, color: '#94a3b8', fontWeight: 'normal' }}>
                 {startStr.substring(5).replace('-', '/')} ~ {endStr.substring(5).replace('-', '/')}
               </span>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-              {dates.map((date) => {
-                const dayLectures = grouped[date];
-                const d = new Date(date);
-                const dayName = DAY_NAMES[d.getDay()];
-
-                return (
-                  <div
-                    key={date}
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'row',
-                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                      borderRadius: '24px',
-                      padding: '30px',
-                      borderLeft: '8px solid #6366f1',
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        width: '120px',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderRight: '2px solid rgba(255,255,255,0.1)',
-                        marginRight: '30px',
-                        paddingRight: '30px',
-                      }}
-                    >
-                      <span style={{ fontSize: 42, fontWeight: 'bold' }}>{dayName}</span>
-                      <span style={{ fontSize: 24, color: '#94a3b8', marginTop: 10 }}>
-                        {date.substring(5).replace('-', '/')}
-                      </span>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '20px' }}>
-                      {dayLectures.length === 0 ? (
-                        <div style={{ display: 'flex', fontSize: 32, color: '#64748b', alignItems: 'center', height: '100%' }}>
-                          일정 없음
-                        </div>
-                      ) : (
-                        dayLectures.map((l, i) => (
-                          <div key={i} style={{ display: 'flex', flexDirection: 'column' }}>
-                            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end', gap: '15px' }}>
-                              <span style={{ fontSize: 36, fontWeight: 'bold', color: '#e2e8f0' }}>
-                                {l.subject}
-                              </span>
-                              {l.professor && (
-                                <span style={{ fontSize: 28, color: '#94a3b8', marginBottom: '3px' }}>
-                                  {l.professor}
-                                </span>
-                              )}
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'row', marginTop: '8px', fontSize: 28, color: '#cbd5e1', gap: '15px' }}>
-                              <span style={{ color: '#818cf8' }}>{l.period}</span>
-                              {l.topic && <span>• {l.topic}</span>}
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+            <div style={{ display: 'flex', flexDirection: 'row', gap: '20px', flex: 1 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '20px' }}>
+                {week1Dates.map(date => renderDay(date, grouped[date]))}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '20px' }}>
+                {week2Dates.map(date => renderDay(date, grouped[date]))}
+              </div>
             </div>
           </div>
         </div>
