@@ -135,15 +135,28 @@ export async function GET() {
       });
     }
 
-    // Fetch font from Google Fonts CDN (works on Netlify unlike local file loading)
-    const fontUrl = 'https://cdn.jsdelivr.net/fontsource/fonts/noto-sans-kr@latest/korean-400-normal.woff';
-    const fontResponse = await fetch(fontUrl);
-    if (!fontResponse.ok) {
-      console.error('Font fetch failed:', fontResponse.status);
-      return new Response('Font loading failed', { status: 500 });
+    // Load font: try local file first, then CDN fallback
+    let fontBuffer: ArrayBuffer;
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const localPath = path.join(process.cwd(), 'public', 'fonts', 'NotoSansKR-Regular.woff');
+      console.log('Trying local font path:', localPath);
+      fontBuffer = fs.readFileSync(localPath);
+      console.log('Local font loaded, size:', fontBuffer.byteLength);
+    } catch (localErr) {
+      console.warn('Local font failed, trying CDN...', localErr);
+      try {
+        const fontUrl = 'https://cdn.jsdelivr.net/fontsource/fonts/noto-sans-kr@latest/korean-400-normal.woff';
+        const fontResponse = await fetch(fontUrl);
+        if (!fontResponse.ok) throw new Error(`CDN responded ${fontResponse.status}`);
+        fontBuffer = await fontResponse.arrayBuffer();
+        console.log('CDN font loaded, size:', fontBuffer.byteLength);
+      } catch (cdnErr) {
+        console.error('Both font loading methods failed:', cdnErr);
+        return new Response('Font loading failed', { status: 500 });
+      }
     }
-    const fontBuffer = await fontResponse.arrayBuffer();
-    console.log('Font fetched from CDN, size:', fontBuffer.byteLength);
 
     // 시간표 그리드 전체 높이 계산
     const GRID_H = 4 * ROW_H + LUNCH_H + 4 * ROW_H; // 교시1~4 + 점심 + 교시5~8
