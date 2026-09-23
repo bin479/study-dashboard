@@ -76,6 +76,15 @@ export async function GET(request: Request) {
 
     const dates = Object.keys(grouped).sort();
 
+    // Fetch Korean Font (Noto Sans KR) dynamically
+    let fontBuffer: ArrayBuffer | null = null;
+    try {
+      const fontRes = await fetch('https://fonts.gstatic.com/s/notosanskr/v36/PbykFmXiEBPT4ITbgNA5Cgms2_wmR2A.woff');
+      fontBuffer = await fontRes.arrayBuffer();
+    } catch (err) {
+      console.error('Failed to load font:', err);
+    }
+
     return new ImageResponse(
       (
         <div
@@ -86,7 +95,7 @@ export async function GET(request: Request) {
             height: '100%',
             backgroundColor: '#0f172a',
             color: 'white',
-            fontFamily: 'sans-serif',
+            fontFamily: '"Noto Sans KR", sans-serif',
           }}
         >
           {/* Top empty space for iOS Clock (approx 500px) */}
@@ -190,6 +199,14 @@ export async function GET(request: Request) {
       {
         width: 1080,
         height: 1920,
+        fonts: fontBuffer ? [
+          {
+            name: 'Noto Sans KR',
+            data: fontBuffer,
+            weight: 400,
+            style: 'normal',
+          },
+        ] : undefined,
       }
     );
   } catch (e: any) {
